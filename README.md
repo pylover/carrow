@@ -19,6 +19,14 @@ cmake ..
 make
 ```
 
+### Profile
+
+
+```
+sudo apt install valgrind
+make all profile
+```
+
 ### Install with makefile
 
 ```bash

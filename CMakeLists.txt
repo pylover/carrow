@@ -35,11 +35,6 @@ set(CPACK_GENERATOR DEB)
 include(CPack)
 
 
-
-
-
-
-
 # Testing
 include(CTest)
 list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
@@ -55,8 +50,7 @@ add_test(NAME test_carrow COMMAND test_carrow)
 # Valgrind
 find_program(VALGRIND "valgrind")
 if(VALGRIND)
-    add_custom_target(valgrind
-        ALL
+    add_custom_target(profile
         COMMAND "valgrind" 
         -s
         --tool=memcheck 
