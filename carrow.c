@@ -22,7 +22,6 @@ struct circuitA {
 };
 
 
-
 struct forkA {
     struct elementA *nextleft;
     struct elementA *nextright;

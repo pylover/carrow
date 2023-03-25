@@ -14,9 +14,30 @@ include_directories(
     ${PROJECT_BINARY_DIR}
 )
 
-add_library(carrow OBJECT carrow.c)
+
+# Static Library
+add_library(carrow STATIC carrow.c)
 target_include_directories(carrow PUBLIC "${PROJECT_BINARY_DIR}")
 target_link_libraries(carrow PUBLIC m clog)
+
+
+# Install
+install(TARGETS carrow DESTINATION "lib")
+install(FILES carrow.h DESTINATION "include")
+
+
+# CPack
+set(CPACK_PACKAGE_FILE_NAME "libcarrow-${PROJECT_VERSION}")
+set(CPACK_SET_DESTDIR true)
+set(CPACK_PACKAGE_NAME libcarrow)
+set(CPACK_PACKAGE_CONTACT "Vahid Mardani <vahid.mardani@gmail.com>")
+set(CPACK_GENERATOR DEB)
+include(CPack)
+
+
+
+
+
 
 
 # Testing
@@ -29,3 +50,20 @@ add_executable(test_carrow
     test_carrow.c)
 target_link_libraries(test_carrow PUBLIC m clog)
 add_test(NAME test_carrow COMMAND test_carrow)
+
+
+# Valgrind
+find_program(VALGRIND "valgrind")
+if(VALGRIND)
+    add_custom_target(valgrind
+        ALL
+        COMMAND "valgrind" 
+        -s
+        --tool=memcheck 
+        --leak-check=yes 
+        --show-reachable=yes 
+        --num-callers=20 
+        --track-fds=yes 
+        $<TARGET_FILE:test_carrow>
+    )
+endif()
