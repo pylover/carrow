@@ -84,6 +84,4 @@ test_foobar_loop() {
 void main() {
     test_foo_loop();
     test_foobar_loop();
-    // TODO: test private
-    // TODO: test fork
 }
