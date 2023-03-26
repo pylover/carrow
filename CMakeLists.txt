@@ -79,7 +79,5 @@ add_custom_target(profile_test_fork
 
 # Profiling
 add_custom_target(profile 
-    DEPENDS 
-    profile_test_carrow
-    profile_test_fork
+    DEPENDS profile_test_fork profile_test_carrow
 )

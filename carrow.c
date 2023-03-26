@@ -28,18 +28,13 @@ struct forkA {
 };
 
 
-struct simpleA {
-    struct elementA *next;
-};
-
-
 struct elementA {
     enum elementtypeA type;
     taskA run;
     void *priv;
     bool last;
     union {
-        struct simpleA simple;
+        struct elementA *next;
         struct forkA fork;
     };
 };
@@ -62,12 +57,12 @@ newA(failA error) {
 /** 
   Make elementA e2 from conputation and bind it to c. returns e2.
 
-  c     e2   result
+   c     e2   result
 
-  o-o   O       o-o-O 
+  >o-o   O       >o-o-O 
 
-  o-o   O       o-o-O
-  |_|           |___|
+  >o-o   O       >o-o-O
+   ^_|            ^___|
 
 */
 struct elementA * 
@@ -82,7 +77,7 @@ appendA(struct circuitA *c, taskA f, void *priv) {
     e2->run = f;
     e2->priv = priv;
     e2->last = true;
-    e2->simple.next = NULL;
+    e2->next = NULL;
     
     if (c->nets == NULL) {
         c->nets = e2;
@@ -102,7 +97,7 @@ freeE(struct elementA *e) {
     }
     
     bool last = e->last;
-    struct elementA *next = e->simple.next;
+    struct elementA *next = e->next;
     free(e);
 
     if (last) {
@@ -128,18 +123,18 @@ freeA(struct circuitA *c) {
 /** 
   Bind two elementA:
 
-  e1    e2     result
+   e1     e2      result
 
-  o-o   O-O    o-o-O-O 
+  >o-o   >O-O    >o-o-O-O 
 
-  o-o   O-O    o-o-O-O 
-        |_|        |_|
+  >o-o   >O-O    >o-o-O-O 
+          ^_|         ^_|
 
-  o-o   O-O    o-o-O-O
-  |_|          |_____|
+  >o-o   >O-O    >o-o-O-O
+   ^_|            ^_____|
 
-  o-o   O-O    o-o-O-O
-  |_|   |_|    |_____|
+  >o-o   >O-O    >o-o-O-O
+   ^_|    ^_|     ^_____|
 
 */
 void 
@@ -149,34 +144,34 @@ bindA(struct elementA *e1, struct elementA *e2) {
 
     while (true) {
         /* Open cicuit */
-        if (e1last->simple.next == NULL) {
+        if (e1last->next == NULL) {
             /* e1 Last elementA */
-            e1last->simple.next = e2;
+            e1last->next = e2;
             e1last->last = false;
             return;
         }
 
         /* Closed cicuit */
-        if (e1last->simple.next == e1) {
+        if (e1last->next == e1) {
             /* It's a closed loop, Inserting e2 before the first elementA. */
-            e1last->simple.next = e2;
+            e1last->next = e2;
             e1last->last = false;
             while (true) {
                 /* e2 Last elementA */
-                if ((e2last->simple.next == NULL) || 
-                        (e2last->simple.next == e2)) {
-                    e2last->simple.next = e1;
+                if ((e2last->next == NULL) || 
+                        (e2last->next == e2)) {
+                    e2last->next = e1;
                     return;
                 }
             
                 /* Navigate forward */
-                e2last = e2last->simple.next;
+                e2last = e2last->next;
             }
             return;
         }
         
         /* Try next circuitA */
-        e1last = e1last->simple.next;
+        e1last = e1last->next;
     }
 }
 
@@ -204,19 +199,19 @@ loopA(struct elementA *e) {
     struct elementA *first = e;
     struct elementA *last = e;
     while (true) {
-        if (last->simple.next == NULL) {
+        if (last->next == NULL) {
             /* Last elementA */
-            last->simple.next = first;
+            last->next = first;
             last->last = true;
             return OK;
         }
 
-        if (last->simple.next == first) {
+        if (last->next == first) {
             /* It's already a closed loop, Do nothing. */
             return ERR;
         }
 
-        last = last->simple.next;
+        last = last->next;
     }
 }
 
@@ -224,12 +219,12 @@ loopA(struct elementA *e) {
 void 
 returnA(struct circuitA *c, void *state) {
     struct elementA *curr = c->current;
-    if (curr->simple.next == NULL) {
+    if (curr->next == NULL) {
         c->current = NULL;
         return;
     }
 
-    struct elementA *next = curr->simple.next;
+    struct elementA *next = curr->next;
     c->current = next;
     next->run(c, state, next->priv);
 }

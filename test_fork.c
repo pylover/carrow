@@ -65,8 +65,7 @@ test_fork() {
 }
 
 
-void main() {
+void 
+main() {
     test_fork();
-    // TODO: test private
-    // TODO: test fork
 }
