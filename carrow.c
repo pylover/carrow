@@ -209,7 +209,6 @@ returnA(struct circuitA *c, void *state) {
 
     struct elementA *next = curr->next;
     c->current = next;
-    next->run(c, state, next->priv);
 }
 
 
@@ -242,7 +241,9 @@ runA(struct circuitA *c, void *state) {
     if (c->current == NULL) {
         c->current = c->nets;
     }
-    c->current->run(c, state, c->current->priv);
+    while (c->current) {
+        c->current->run(c, state, c->current->priv);
+    }
 }
 
 
