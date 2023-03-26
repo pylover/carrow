@@ -15,8 +15,16 @@ include_directories(
 )
 
 
+add_library(core OBJECT core.c)
+add_library(ev OBJECT ev.c)
+
+
 # Static Library
-add_library(carrow STATIC carrow.c)
+add_library(carrow 
+    STATIC 
+    $<TARGET_OBJECTS:core> 
+    $<TARGET_OBJECTS:ev> 
+)
 target_include_directories(carrow PUBLIC "${PROJECT_BINARY_DIR}")
 target_link_libraries(carrow PUBLIC m clog)
 
@@ -52,10 +60,8 @@ set(VALGRIND_FLAGS
 
 
 # Test carrow
-add_executable(test_carrow
-    $<TARGET_OBJECTS:carrow> 
-    test_carrow.c)
-target_link_libraries(test_carrow PUBLIC m clog)
+add_executable(test_carrow test_carrow.c)
+target_link_libraries(test_carrow PUBLIC carrow)
 add_test(NAME test_carrow COMMAND test_carrow)
 add_custom_target(profile_test_carrow
     COMMAND "valgrind" 
