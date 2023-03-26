@@ -40,24 +40,46 @@ include(CTest)
 list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
 
+# Valgrind
+set(VALGRIND_FLAGS
+    -s
+    --tool=memcheck 
+    --leak-check=yes 
+    --show-reachable=yes 
+    --num-callers=20 
+    --track-fds=yes 
+)
+
+
+# Test carrow
 add_executable(test_carrow
     $<TARGET_OBJECTS:carrow> 
     test_carrow.c)
 target_link_libraries(test_carrow PUBLIC m clog)
 add_test(NAME test_carrow COMMAND test_carrow)
+add_custom_target(profile_test_carrow
+    COMMAND "valgrind" 
+    ${VALGRIND_FLAGS}
+    $<TARGET_FILE:test_carrow>
+)
 
 
-# Valgrind
-find_program(VALGRIND "valgrind")
-if(VALGRIND)
-    add_custom_target(profile
-        COMMAND "valgrind" 
-        -s
-        --tool=memcheck 
-        --leak-check=yes 
-        --show-reachable=yes 
-        --num-callers=20 
-        --track-fds=yes 
-        $<TARGET_FILE:test_carrow>
-    )
-endif()
+# Test fork
+add_executable(test_fork
+    $<TARGET_OBJECTS:carrow> 
+    test_fork.c)
+target_link_libraries(test_fork PUBLIC m clog)
+add_test(NAME test_fork COMMAND test_fork)
+add_custom_target(profile_test_fork
+    COMMAND "valgrind" 
+    ${VALGRIND_FLAGS}
+    $<TARGET_FILE:test_fork>
+)
+
+
+# Profiling
+add_custom_target(profile 
+    DEPENDS 
+    profile_test_carrow
+    profile_test_fork
+)

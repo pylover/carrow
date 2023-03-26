@@ -124,8 +124,9 @@ freeA(struct circuitA *c) {
     free(c);
 }
 
+
 /** 
-  Bind two circuitAs:
+  Bind two elementA:
 
   e1    e2     result
 
