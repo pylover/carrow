@@ -1,11 +1,12 @@
 #include "carrow.h"
 
+#include <clog.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdarg.h>
 #include <errno.h>
-#include <err.h>
 
 
 struct circuitA {
@@ -28,7 +29,7 @@ struct circuitA *
 newA(failA error) {
     struct circuitA *c = malloc(sizeof(struct circuitA));
     if (c == NULL) {
-        err(EXIT_FAILURE, "Out of memory");
+        FATAL("Out of memory");
     }
     
     c->err = error;
@@ -53,7 +54,7 @@ struct elementA *
 appendA(struct circuitA *c, taskA f, void *priv) {
     struct elementA *e2 = malloc(sizeof(struct elementA));
     if (e2 == NULL) {
-        err(EXIT_FAILURE, "Out of memory");
+        FATAL("Out of memory");
     }
     
     /* Initialize new elementA */
@@ -242,6 +243,7 @@ runA(struct circuitA *c, void *state) {
         c->current = c->nets;
     }
     while (c->current) {
+        errno = 0;
         c->current->run(c, state, c->current->priv);
     }
 }
