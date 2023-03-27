@@ -23,11 +23,10 @@ struct evstate {
 };
 
 
-void 
+struct elementA *
 evinitA(struct circuitA *c, void *s, struct ev *priv) {
     if (priv->state != NULL ) {
-        errorA(c, s, "Already initialized");
-        return;
+        return errorA(c, s, "Already initialized");
     }
    
     priv->state = malloc(sizeof(struct evstate));
@@ -38,19 +37,17 @@ evinitA(struct circuitA *c, void *s, struct ev *priv) {
     struct evstate *state = priv->state;
     state->fd = epoll_create1(0);
     if (state->fd < 0) {
-        errorA(c, s, "epoll_create1");
-        return;
+        return errorA(c, s, "epoll_create1");
     }
 
     long openmax = sysconf(_SC_OPEN_MAX);
     if (openmax == -1) {
-        errorA(c, s, "sysconf(openmax)");
-        return;
+        return errorA(c, s, "sysconf(openmax)");
     }
     state->openmax = openmax;
     state->bagscount = 0;
     state->bags = calloc(openmax, sizeof(struct evbag*));
-    returnA(c, s);
+    return nextA(c, s);
 }
 
 
@@ -85,3 +82,13 @@ void
 evcloseA(struct circuitA *c, void *s, struct ev *priv) {
     evclose(priv->state);
 }
+// 
+// 
+// void 
+// waitA(struct circuitA *c, void *s, int fd, int flags) {
+//     struct bagS *bag = meloop_bag_new(c, s, fd);
+//     
+//     if (meloop_ev_arm(op | flags, bag)) {
+//         ERROR_A(c, s, data, "meloop_ev_arm");
+//     }
+// }

@@ -19,24 +19,23 @@ struct barstate {
 };
 
 
-void
+struct elementA *
 fooA(struct circuitA *c, struct state *s) {
     s->foo++;
     s->all++;
     if (s->all >= 10) {
-        ERROR_A(c, s, "All done");
-        return;
+        return ERROR_A(c, s, "All done");
     }
-    RETURN_A(c, s);
+    return nextA(c, s);
 }
 
 
-void
+struct elementA *
 barA(struct circuitA *c, struct state *s, struct barstate *bar) {
     s->bar++;
     s->all++;
     bar->counter++;
-    RETURN_A(c, s);
+    return nextA(c, s);
 }
 
 

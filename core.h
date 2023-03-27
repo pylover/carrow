@@ -11,7 +11,8 @@ struct elementA;
 struct circuitA;
 
 
-typedef void (*taskA) (struct circuitA *a, void *state, void *priv);
+typedef struct elementA * (*taskA) (struct circuitA *a, void *state, 
+        void *priv);
 typedef void (*okA) (struct circuitA *a, void* state);
 typedef void (*failA) (struct circuitA *a, void* state, const char *msg);
 
@@ -36,11 +37,11 @@ int
 loopA(struct elementA *e);
 
 
-void
-returnA(struct circuitA *c, void *state);
+struct elementA*
+nextA(struct circuitA *c, void *state);
 
 
-void
+struct elementA*
 errorA(struct circuitA *c, void *state, const char *format, ...);
 
 

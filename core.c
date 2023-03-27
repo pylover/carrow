@@ -200,20 +200,13 @@ loopA(struct elementA *e) {
 }
 
 
-void 
-returnA(struct circuitA *c, void *state) {
-    struct elementA *curr = c->current;
-    if (curr->next == NULL) {
-        c->current = NULL;
-        return;
-    }
-
-    struct elementA *next = curr->next;
-    c->current = next;
+struct elementA *
+nextA(struct circuitA *c, void *state) {
+    return c->current->next;
 }
 
 
-void 
+struct elementA *
 errorA(struct circuitA *c, void *state, const char *format, ...) {
     char buff[CARROW_ERRORMSG_BUFFSIZE]; 
     char *msg;
@@ -233,7 +226,8 @@ errorA(struct circuitA *c, void *state, const char *format, ...) {
     if (c->err != NULL) {
         c->err(c, state, msg);
     }
-    c->current = NULL;
+
+    return NULL;
 }
 
 
@@ -244,7 +238,7 @@ runA(struct circuitA *c, void *state) {
     }
     while (c->current) {
         errno = 0;
-        c->current->run(c, state, c->current->priv);
+        c->current = c->current->run(c, state, c->current->priv);
     }
 }
 

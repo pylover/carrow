@@ -14,7 +14,7 @@ struct ev {
 };
 
 
-void 
+struct elementA *
 evinitA(struct circuitA *c, void *s, struct ev *priv);
 
 
