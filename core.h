@@ -25,6 +25,10 @@ void
 freeA(struct circuitA *a);
 
 
+struct elementA *
+currentA(struct circuitA *c);
+
+
 void
 bindA(struct elementA *e1, struct elementA *e2);
 
@@ -51,6 +55,10 @@ runA(struct circuitA *c, void *state);
 
 void *
 privA(struct circuitA *c);
+
+
+void
+continueA(struct circuitA *c, struct elementA *el, void *state);
 
 
 #endif

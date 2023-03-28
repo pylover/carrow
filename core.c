@@ -232,10 +232,18 @@ errorA(struct circuitA *c, void *state, const char *format, ...) {
 
 
 void
+continueA(struct circuitA *c, struct elementA *el, void *state) {
+    c->current = el;
+    runA(c, state);
+}
+
+
+void
 runA(struct circuitA *c, void *state) {
     if (c->current == NULL) {
         c->current = c->nets;
     }
+
     while (c->current) {
         errno = 0;
         c->current = c->current->run(c, state, c->current->priv);
@@ -246,4 +254,10 @@ runA(struct circuitA *c, void *state) {
 void *
 privA(struct circuitA *c) {
     return c->current->priv;
+}
+
+
+struct elementA *
+currentA(struct circuitA *c) {
+    return c->current;
 }

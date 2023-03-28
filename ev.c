@@ -10,8 +10,8 @@
 struct evbag {
     int fd;
     struct circuitA *circuit;
+    struct elementA *current;
     void *state;
-    int index;
 };
 
 
@@ -51,6 +51,42 @@ evinitA(struct circuitA *c, void *s, struct ev *priv) {
 }
 
 
+void 
+evcloseA(struct circuitA *c, void *s, struct ev *priv) {
+    // TODO: evclose(priv->state);
+}
+
+
+static struct evbag *
+_bag_new(struct circuitA *c, void *state, int fd) {
+    struct evbag *bag = malloc(sizeof(struct evbag));
+    if (bag == NULL) {
+        FATAL("Out of memory");
+    }
+    
+    bag->fd = fd;
+    bag->circuit = c;
+    bag->current = currentA(c);
+    bag->state = state;
+
+    return bag;
+}
+
+
+static int
+_evdearm(struct evbag *bag) {
+    // TODO:
+    return 0;
+}
+
+
+static int
+_evarm(struct evbag *bag, int flags) {
+    // TODO:
+    return 0;
+}
+
+
 static void
 _bags_freeall(struct evstate *state) {
     int i;
@@ -63,6 +99,7 @@ _bags_freeall(struct evstate *state) {
             continue;
         }
 
+        _evdearm(bag);
         free(bag);
         state->bags[i] = NULL;
     }
@@ -78,17 +115,52 @@ evclose(struct evstate *state) {
 }
 
 
-void 
-evcloseA(struct circuitA *c, void *s, struct ev *priv) {
-    evclose(priv->state);
+struct elementA * 
+waitA(struct circuitA *c, void *s, int fd, int flags) {
+    struct evbag *bag = _bag_new(c, s, fd);
+    
+    if (_evarm(bag, flags)) {
+        return errorA(c, s, "meloop_ev_arm");
+    }
+
+    /* Returning null to stop executing the next task */
+    return NULL;
 }
-// 
-// 
-// void 
-// waitA(struct circuitA *c, void *s, int fd, int flags) {
-//     struct bagS *bag = meloop_bag_new(c, s, fd);
-//     
-//     if (meloop_ev_arm(op | flags, bag)) {
-//         ERROR_A(c, s, data, "meloop_ev_arm");
-//     }
-// }
+
+
+/** event loop 
+*/
+int
+evloop(volatile int *status, struct evstate *state) {
+    struct epoll_event events[state->openmax];
+    struct epoll_event ev;
+    struct evbag *bag;
+    int i;
+    int nfds;
+    int fd;
+    int ret = OK;
+
+    while (((status == NULL) || (*status > EXIT_FAILURE)) &&
+            (state->bagscount)) {
+        nfds = epoll_wait(state->fd, events, state->openmax, -1);
+        if (nfds < 0) {
+            ret = ERR;
+            break;
+        }
+
+        if (nfds == 0) {
+            ret = OK;
+            break;
+        }
+
+        for (i = 0; i < nfds; i++) {
+            ev = events[i];
+            bag = (struct evbag *) ev.data.ptr;
+            fd = bag->fd;
+            
+            continueA(bag->circuit, bag->current, bag->state);;
+        }
+    }
+
+    return ret;
+}
