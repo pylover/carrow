@@ -5,21 +5,28 @@
 #include "core.h"
 
 
-struct evstate;
+struct evglobalstate;
 
 
 struct ev {
     int flags;
-    struct evstate *state;
+    struct evglobalstate *globalstate;
+};
+
+
+struct evstate {
+    int fd;
+    int flags;
+    int events;
 };
 
 
 struct elementA *
-evinitA(struct circuitA *c, void *s, struct ev *priv);
+evinitA(struct circuitA *c, struct evstate *s, struct ev *priv);
 
 
 void 
-evcloseA(struct circuitA *c, void *s, struct ev *priv);
+evcloseA(struct circuitA *c, struct evstate *s, struct ev *priv);
 
 
 #endif
