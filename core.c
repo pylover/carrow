@@ -232,8 +232,8 @@ errorA(struct circuitA *c, void *state, const char *format, ...) {
 
 
 void
-continueA(struct circuitA *c, struct elementA *el, void *state) {
-    c->current = el;
+continueA(struct circuitA *c, struct elementA *e, void *state) {
+    c->current = e;
     runA(c, state);
 }
 

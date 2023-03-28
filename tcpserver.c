@@ -63,16 +63,13 @@ acceptA(struct circuitA *c, struct tcpsrvstate *s) {
     socklen_t addrlen = sizeof(struct sockaddr);
     struct sockaddr addr;
 
-    // fd = accept4(s->listenfd, &addr, &addrlen, SOCK_NONBLOCK);
-    // if (fd == -1) {
-    //     if (EVMUSTWAIT()) {
-    //         return evwaitA(c, s, s->listenfd, EVIN);
-    //     }
-    //     else {
-    //         return errorA(c, s, "accept4");
-    //     }
-    //     return;
-    // }
+    fd = accept4(s->listenfd, &addr, &addrlen, SOCK_NONBLOCK);
+    if (fd == -1) {
+        if (EVMUSTWAIT()) {
+            return evwaitA(c, (struct evstate*)s, s->listenfd, EVIN);
+        }
+        return errorA(c, s, "accept4");
+    }
 
     // if (priv->client_connected != NULL) {
     //     priv->client_connected(c, s, fd, &addr);

@@ -8,7 +8,6 @@
 
 
 struct evbag {
-    int fd;
     struct circuitA *circuit;
     struct elementA *current;
     struct evstate *state;
@@ -58,7 +57,7 @@ evcloseA(struct circuitA *c, struct evstate *s, struct evpriv *priv) {
 
 
 static struct evbag *
-_bag_new(struct circuitA *c, struct evstate *state, int fd, int op) {
+_bag_new(struct circuitA *c, struct evstate *state) {
     struct evbag *bag = malloc(sizeof(struct evbag));
     if (bag == NULL) {
         FATAL("Out of memory");
@@ -67,7 +66,6 @@ _bag_new(struct circuitA *c, struct evstate *state, int fd, int op) {
     bag->circuit = c;
     bag->current = currentA(c);
     bag->state = state;
-    bag->fd = fd;
 
     return bag;
 }
@@ -117,7 +115,9 @@ evclose(struct evglobalstate *globalstate) {
 
 struct elementA * 
 evwaitA(struct circuitA *c, struct evstate *s, int fd, int op) {
-    struct evbag *bag = _bag_new(c, s, fd, op);
+    s->fd = fd;
+    s->flags = op;
+    struct evbag *bag = _bag_new(c, s);
     
     if (_evarm(bag)) {
         return errorA(c, s, "meloop_ev_arm");
@@ -135,6 +135,8 @@ evloop(volatile int *status, struct evglobalstate *globalstate) {
     struct epoll_event events[globalstate->openmax];
     struct epoll_event ev;
     struct evbag *bag;
+    struct circuitA *c;
+    struct evstate *s;
     int i;
     int nfds;
     int fd;
@@ -157,7 +159,11 @@ evloop(volatile int *status, struct evglobalstate *globalstate) {
         for (i = 0; i < nfds; i++) {
             ev = events[i];
             bag = (struct evbag *) ev.data.ptr;
-            continueA(bag->circuit, bag->current, bag->state);;
+            c = bag->circuit;
+            s = bag->state;
+
+            s->events = ev.events;
+            continueA(c, bag->current, s);
         }
     }
 
