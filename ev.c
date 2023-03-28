@@ -8,6 +8,7 @@
 
 
 struct evbag {
+    int fd;
     struct circuitA *circuit;
     struct elementA *current;
     struct evstate *state;
@@ -15,7 +16,7 @@ struct evbag {
 
 
 struct evglobalstate {
-    int fd;
+    int epollfd;
     unsigned int openmax;
     unsigned int bagscount;
     struct evbag **bags;
@@ -23,7 +24,7 @@ struct evglobalstate {
 
 
 struct elementA *
-evinitA(struct circuitA *c, struct evstate *s, struct ev *priv) {
+evinitA(struct circuitA *c, struct evstate *s, struct evpriv *priv) {
     if (priv->globalstate != NULL ) {
         return errorA(c, s, "Already initialized");
     }
@@ -34,8 +35,8 @@ evinitA(struct circuitA *c, struct evstate *s, struct ev *priv) {
     }
     
     struct evglobalstate *globalstate = priv->globalstate;
-    globalstate->fd = epoll_create1(0);
-    if (globalstate->fd < 0) {
+    globalstate->epollfd = epoll_create1(0);
+    if (globalstate->epollfd < 0) {
         return errorA(c, s, "epoll_create1");
     }
 
@@ -51,13 +52,13 @@ evinitA(struct circuitA *c, struct evstate *s, struct ev *priv) {
 
 
 void 
-evcloseA(struct circuitA *c, struct evstate *s, struct ev *priv) {
+evcloseA(struct circuitA *c, struct evstate *s, struct evpriv *priv) {
     // TODO: evclose(priv->globalstate);
 }
 
 
 static struct evbag *
-_bag_new(struct circuitA *c, struct evstate *state) {
+_bag_new(struct circuitA *c, struct evstate *state, int fd, int op) {
     struct evbag *bag = malloc(sizeof(struct evbag));
     if (bag == NULL) {
         FATAL("Out of memory");
@@ -66,6 +67,7 @@ _bag_new(struct circuitA *c, struct evstate *state) {
     bag->circuit = c;
     bag->current = currentA(c);
     bag->state = state;
+    bag->fd = fd;
 
     return bag;
 }
@@ -106,7 +108,7 @@ _bags_freeall(struct evglobalstate *globalstate) {
 
 static void 
 evclose(struct evglobalstate *globalstate) {
-    close(globalstate->fd);
+    close(globalstate->epollfd);
     _bags_freeall(globalstate);
     free(globalstate->bags);
     free(globalstate);
@@ -114,8 +116,8 @@ evclose(struct evglobalstate *globalstate) {
 
 
 struct elementA * 
-waitA(struct circuitA *c, struct evstate *s) {
-    struct evbag *bag = _bag_new(c, s);
+evwaitA(struct circuitA *c, struct evstate *s, int fd, int op) {
+    struct evbag *bag = _bag_new(c, s, fd, op);
     
     if (_evarm(bag)) {
         return errorA(c, s, "meloop_ev_arm");
@@ -140,7 +142,8 @@ evloop(volatile int *status, struct evglobalstate *globalstate) {
 
     while (((status == NULL) || (*status > EXIT_FAILURE)) &&
             (globalstate->bagscount)) {
-        nfds = epoll_wait(globalstate->fd, events, globalstate->openmax, -1);
+        nfds = epoll_wait(globalstate->epollfd, events, globalstate->openmax, 
+                -1);
         if (nfds < 0) {
             ret = ERR;
             break;

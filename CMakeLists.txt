@@ -16,6 +16,7 @@ include_directories(
 
 
 add_library(core OBJECT core.c)
+add_library(addr OBJECT addr.c)
 add_library(ev OBJECT ev.c)
 
 
@@ -75,3 +76,11 @@ add_custom_target(profile
     DEPENDS 
     profile_test_carrow
 )
+
+
+add_executable(tcpserver 
+    tcpserver.c
+    $<TARGET_OBJECTS:addr> 
+)
+target_link_libraries(tcpserver PUBLIC carrow)
+

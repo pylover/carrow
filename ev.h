@@ -5,28 +5,32 @@
 #include "core.h"
 
 
+#define EVMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+#define EVIN    EPOLLIN
+#define EVOUT   EPOLLOUT
+
+
 struct evglobalstate;
 
 
-struct ev {
+struct evpriv {
     int flags;
     struct evglobalstate *globalstate;
 };
 
 
 struct evstate {
-    int fd;
     int flags;
     int events;
 };
 
 
 struct elementA *
-evinitA(struct circuitA *c, struct evstate *s, struct ev *priv);
+evinitA(struct circuitA *c, struct evstate *s, struct evpriv *priv);
 
 
 void 
-evcloseA(struct circuitA *c, struct evstate *s, struct ev *priv);
+evcloseA(struct circuitA *c, struct evstate *s, struct evpriv *priv);
 
 
 #endif

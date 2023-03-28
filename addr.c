@@ -1,0 +1,36 @@
+#include "addr.h"
+#include "core.h"
+
+#include <stdio.h>
+#include <string.h>
+
+
+static char addrtemp[256];
+
+
+char *
+carrow_sockaddr_dump(struct sockaddr *addr) {
+    struct sockaddr_in *addrin = (struct sockaddr_in*) addr;
+    sprintf(addrtemp, "%s:%d", 
+            inet_ntoa(addrin->sin_addr),
+            ntohs(addrin->sin_port));
+    return addrtemp;
+}
+
+
+int
+carrow_sockaddr_parse(struct sockaddr *saddr, const char *addr, 
+        unsigned short port) {
+    struct sockaddr_in *addrin = (struct sockaddr_in*)saddr;
+
+    memset(addrin, 0, sizeof(struct sockaddr_in));
+    addrin->sin_family = AF_INET;
+    if (addr == NULL) {
+        addrin->sin_addr.s_addr = htonl(INADDR_ANY);
+    } 
+    else if(inet_pton(AF_INET, addr, &addrin->sin_addr) <= 0 ) {
+        return ERR;
+    }
+    addrin->sin_port = htons(port); 
+    return OK;
+}

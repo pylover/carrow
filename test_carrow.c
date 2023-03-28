@@ -24,7 +24,7 @@ fooA(struct circuitA *c, struct state *s) {
     s->foo++;
     s->all++;
     if (s->all >= 10) {
-        return ERROR_A(c, s, "All done");
+        return errorA(c, s, "All done");
     }
     return nextA(c, s);
 }
@@ -53,7 +53,7 @@ test_foo_loop() {
     struct elementA *e = APPEND_A(c, fooA, NULL);
                loopA(e); 
     
-    RUN_A(c, &state);
+    runA(c, &state);
     eqint(10, state.all);
     eqint(10, state.foo);
     eqstr("All done", state.error);
@@ -71,7 +71,7 @@ test_foobar_loop() {
                          APPEND_A(c, barA, &bar);
                loopA(e); 
     
-    RUN_A(c, &state);
+    runA(c, &state);
     eqint(11, state.all);
     eqint(6, state.foo);
     eqint(5, state.bar);
