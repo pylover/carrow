@@ -22,7 +22,6 @@ struct evpriv {
 
 struct evstate {
     int fd;
-    int flags;
     int events;
 };
 
@@ -37,6 +36,10 @@ evcloseA(struct circuitA *c, struct evstate *s, struct evpriv *priv);
 
 struct elementA * 
 evwaitA(struct circuitA *c, struct evstate *s, int fd, int op);
+
+
+int
+evloop(volatile int *status);
 
 
 #endif

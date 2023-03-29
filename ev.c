@@ -4,6 +4,7 @@
 #include <clog.h>
 
 #include <stdlib.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/epoll.h>
 
@@ -30,21 +31,32 @@ evinitA(struct circuitA *c, struct evstate *s, struct evpriv *priv) {
 }
 
 
-static void
-bags_freeall() {
-}
-
-
-
 static int
-_evdearm(struct evbag *bag) {
-    // TODO:
+_evarm(struct evbag *bag, int op) {
+    struct epoll_event ev;
+    ev.events = op;
+    ev.data.ptr = bag;
+    
+    if (epoll_ctl(epollfd, EPOLL_CTL_MOD, bag->state->fd, &ev)) {
+        if (errno == ENOENT) {
+            errno = 0;
+            return epoll_ctl(epollfd, EPOLL_CTL_ADD, bag->state->fd, &ev);
+        }
+        return -1;
+    }
+
     return 0;
 }
 
 
-static void 
-_evclose() {
+static int
+_evdearm(int fd) {
+    return epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL);
+}
+
+
+void 
+evdeinitA() {
     int i;
     struct evbag *bag;
 
@@ -58,52 +70,19 @@ _evclose() {
             continue;
         }
 
-        _evdearm(bag);
+        _evdearm(i);
         evbag_free(bag->state->fd);
     }
-}
-
-
-void 
-evdeinitA(struct circuitA *c, struct evstate *s, struct evpriv *priv) {
-    _evclose();
-}
-
-
-static int
-_evarm(struct evbag *bag) {
-    // struct epoll_event ev;
-    // 
-    // ev.events = bag->flags;
-    // ev.data.ptr = bag;
-    //  
-    // if (epoll_ctl(_epfd, EPOLL_CTL_MOD, bag->fd, &ev) != OK) {
-    //     if (errno == ENOENT) {
-    //         errno = 0;
-    //         /* File descriptor is not exists yet */
-    //         if (epoll_ctl(_epfd, EPOLL_CTL_ADD, bag->fd, &ev) != OK) {
-    //             return ERR;
-    //         }
-    //     }
-    //     else {
-    //         return ERR;
-    //     }
-    // }
-    // 
-    // return OK;
-
-    // TODO:
-    return 0;
 }
 
 
 struct elementA * 
 evwaitA(struct circuitA *c, struct evstate *s, int fd, int op) {
     s->fd = fd;
-    s->flags = op;
-    struct evbag *bag = bag_new(c, s);
-    
-    if (_evarm(bag)) {
+    struct evbag *bag = evbag_ensure(c, s);
+
+    /* Arm */
+    if (_evarm(bag, op)) {
         return errorA(c, s, "_evarm");
     }
 
@@ -126,9 +105,12 @@ evloop(volatile int *status) {
     int nfds;
     int fd;
     int ret = OK;
-
+    errno = 0;
+    
+    DEBUG("FOO %d", evbag_count());
     while (((status == NULL) || (*status > EXIT_FAILURE)) && evbag_count()) {
         nfds = epoll_wait(epollfd, events, evmax, -1);
+        DEBUG("FOO %d", nfds);
         if (nfds < 0) {
             ret = ERR;
             break;

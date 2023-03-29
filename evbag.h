@@ -40,8 +40,8 @@ struct evbag *
 bag_new(struct circuitA *c, struct evstate *state);
 
 
-bool
-evbag_exists(struct evbag *bag);
+struct evbag *
+evbag_ensure(struct circuitA *c, struct evstate *state);
 
 
 #endif

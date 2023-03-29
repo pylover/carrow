@@ -5,6 +5,7 @@
 
 #include <errno.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <netdb.h>
@@ -49,7 +50,7 @@ listenA(struct circuitA *c, struct tcpsrvstate *s) {
     
     /* Listen */
     res = listen(fd, s->backlog); 
-    // INFO("binding on: %s", meloop_sockaddr_dump(addr));
+    INFO("Listening on: %s", carrow_sockaddr_dump(addr));
     if (res) {
         return errorA(c, s, "Cannot listen on: %s", 
                 carrow_sockaddr_dump(addr));
@@ -68,6 +69,7 @@ acceptA(struct circuitA *c, struct tcpsrvstate *s) {
     fd = accept4(s->listenfd, &addr, &addrlen, SOCK_NONBLOCK);
     if (fd == -1) {
         if (EVMUSTWAIT()) {
+            errno = 0;
             return evwaitA(c, (struct evstate*)s, s->listenfd, EVIN);
         }
         return errorA(c, s, "accept4");
@@ -83,12 +85,11 @@ acceptA(struct circuitA *c, struct tcpsrvstate *s) {
 
 int
 main() {
+    clog_verbosity = CLOG_DEBUG;
     struct evpriv evpriv = {
         .flags = 0,
     };
     struct tcpsrvstate state = {
-        .flags = 0,
-
         .bindaddr = "0.0.0.0",
         .bindport = 3030,
         .backlog = 2,
@@ -100,5 +101,13 @@ main() {
                loopA(e); 
 
     runA(c, &state);
+    if (evloop(NULL)) {
+        goto failure;
+    }
     freeA(c);
+    return EXIT_SUCCESS;
+
+failure:
+    freeA(c);
+    return EXIT_FAILURE;
 }

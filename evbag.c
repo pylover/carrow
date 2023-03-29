@@ -1,5 +1,6 @@
 #include "evbag.h"
 #include "core.h"
+#include "ev.h"
 
 #include <clog.h>
 
@@ -63,24 +64,26 @@ evbag_free(int fd) {
     }
     free(bag);
     bags[fd] = NULL;
+    bagscount--;
 }
 
 
 struct evbag *
-bag_new(struct circuitA *c, struct evstate *state) {
-    struct evbag *bag = malloc(sizeof(struct evbag));
+evbag_ensure(struct circuitA *c, struct evstate *state) {
+    int fd = state->fd;
+    struct evbag *bag = bags[fd];
+
     if (bag == NULL) {
-        FATAL("Out of memory");
+        bag = malloc(sizeof(struct evbag));
+        if (bag == NULL) {
+            FATAL("Out of memory");
+        }
+        bags[fd] = bag;
+        bagscount++;
     }
     
     bag->circuit = c;
     bag->current = currentA(c);
     bag->state = state;
-
     return bag;
-}
-
-
-bool
-evbag_exists(struct evbag *bag) {
 }
