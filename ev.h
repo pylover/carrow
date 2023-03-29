@@ -17,7 +17,6 @@ struct evglobalstate;
 
 struct evpriv {
     int flags;
-    struct evglobalstate *globalstate;
 };
 
 

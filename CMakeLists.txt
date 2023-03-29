@@ -18,6 +18,7 @@ include_directories(
 add_library(core OBJECT core.c)
 add_library(addr OBJECT addr.c)
 add_library(ev OBJECT ev.c)
+add_library(evbag OBJECT evbag.c)
 
 
 # Static Library
@@ -25,6 +26,7 @@ add_library(carrow
     STATIC 
     $<TARGET_OBJECTS:core> 
     $<TARGET_OBJECTS:ev> 
+    $<TARGET_OBJECTS:evbag> 
 )
 target_include_directories(carrow PUBLIC "${PROJECT_BINARY_DIR}")
 target_link_libraries(carrow PUBLIC m clog)
