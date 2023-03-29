@@ -1,6 +1,8 @@
 #include "carrow.h"
 #include "addr.h"
 
+#include <clog.h>
+
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -71,6 +73,7 @@ acceptA(struct circuitA *c, struct tcpsrvstate *s) {
         return errorA(c, s, "accept4");
     }
 
+    INFO("New connection: %s", carrow_sockaddr_dump(&addr));
     // if (priv->client_connected != NULL) {
     //     priv->client_connected(c, s, fd, &addr);
     // }

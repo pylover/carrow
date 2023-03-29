@@ -80,6 +80,26 @@ _evdearm(struct evbag *bag) {
 
 static int
 _evarm(struct evbag *bag) {
+    // struct epoll_event ev;
+    // 
+    // ev.events = bag->flags;
+    // ev.data.ptr = bag;
+    //  
+    // if (epoll_ctl(_epfd, EPOLL_CTL_MOD, bag->fd, &ev) != OK) {
+    //     if (errno == ENOENT) {
+    //         errno = 0;
+    //         /* File descriptor is not exists yet */
+    //         if (epoll_ctl(_epfd, EPOLL_CTL_ADD, bag->fd, &ev) != OK) {
+    //             return ERR;
+    //         }
+    //     }
+    //     else {
+    //         return ERR;
+    //     }
+    // }
+    // 
+    // return OK;
+
     // TODO:
     return 0;
 }
