@@ -19,6 +19,8 @@ struct tcpsrvstate {
     int listenfd;
 
     struct sockaddr newconnaddr;
+    socklen_t addrlen;
+    int newconnfd;
 };
 
 

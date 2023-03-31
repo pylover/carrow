@@ -50,9 +50,10 @@ listenA(struct circuitA *c, struct tcpsrvstate *s) {
 struct elementA *
 acceptA(struct circuitA *c, struct tcpsrvstate *s) {
     int fd;
-    socklen_t addrlen = sizeof(struct sockaddr);
+    s->addrlen = sizeof(struct sockaddr);
 
-    fd = accept4(s->listenfd, &(s->newconnaddr), &addrlen, SOCK_NONBLOCK);
+    fd = accept4(s->listenfd, &(s->newconnaddr), &(s->addrlen), 
+            SOCK_NONBLOCK);
     if (fd == -1) {
         if (EVMUSTWAIT()) {
             errno = 0;
@@ -60,6 +61,7 @@ acceptA(struct circuitA *c, struct tcpsrvstate *s) {
         }
         return errorA(c, s, "accept4");
     }
-
+    
+    s->newconnfd = fd;
     return nextA(c, s);
 }
