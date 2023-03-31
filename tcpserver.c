@@ -17,16 +17,13 @@ newconnA(struct circuitA *c, struct tcpsrvstate *s) {
 int
 main() {
     clog_verbosity = CLOG_DEBUG;
-    struct evpriv evpriv = {
-        .epollflags = 0,
-    };
     struct tcpsrvstate state = {
         .bindaddr = "0.0.0.0",
         .bindport = 3030,
         .backlog = 2,
     };
     struct circuitA *c = NEW_A(NULL);
-                         APPEND_A(c, evinitA, &evpriv);
+                         APPEND_A(c, evinitA, NULL);
                          APPEND_A(c, listenA, NULL);
     struct elementA *e = APPEND_A(c, acceptA, NULL);
                          APPEND_A(c, newconnA, NULL);

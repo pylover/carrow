@@ -28,7 +28,7 @@ struct evstate {
 
 
 struct elementA *
-evinitA(struct circuitA *c, struct evstate *s, struct evpriv *priv);
+evinitA(struct circuitA *c, struct evstate *s);
 
 
 void 

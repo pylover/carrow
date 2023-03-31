@@ -37,7 +37,7 @@ _evdearm(int fd) {
 
 
 struct elementA *
-evinitA(struct circuitA *c, struct evstate *s, struct evpriv *priv) {
+evinitA(struct circuitA *c, struct evstate *s) {
     if (epollfd != -1 ) {
         return errorA(c, s, "Already initialized");
     }
@@ -46,7 +46,7 @@ evinitA(struct circuitA *c, struct evstate *s, struct evpriv *priv) {
         return errorA(c, s, "Cannot initialize event bag");
     }
 
-    epollfd = epoll_create1(priv->epollflags);
+    epollfd = epoll_create1(0);
     if (epollfd < 0) {
         return errorA(c, s, "epoll_create1");
     }
