@@ -10,13 +10,14 @@
 #define EVMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK))
 #define EVIN    EPOLLIN
 #define EVOUT   EPOLLOUT
+#define EVET    EPOLLET
 
 
 struct evglobalstate;
 
 
 struct evpriv {
-    int flags;
+    int epollflags;
 };
 
 
@@ -28,6 +29,10 @@ struct evstate {
 
 struct elementA *
 evinitA(struct circuitA *c, struct evstate *s, struct evpriv *priv);
+
+
+void 
+evdeinitA();
 
 
 void 

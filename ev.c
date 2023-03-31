@@ -12,25 +12,6 @@
 static int epollfd = -1;
 
 
-struct elementA *
-evinitA(struct circuitA *c, struct evstate *s, struct evpriv *priv) {
-    if (epollfd != -1 ) {
-        return errorA(c, s, "Already initialized");
-    }
-  
-    if (evbag_init()) {
-        return errorA(c, s, "Cannot initialize event bag");
-    }
-
-    epollfd = epoll_create1(0);
-    if (epollfd < 0) {
-        return errorA(c, s, "epoll_create1");
-    }
-
-    return nextA(c, s);
-}
-
-
 static int
 _evarm(struct evbag *bag, int op) {
     struct epoll_event ev;
@@ -52,6 +33,25 @@ _evarm(struct evbag *bag, int op) {
 static int
 _evdearm(int fd) {
     return epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL);
+}
+
+
+struct elementA *
+evinitA(struct circuitA *c, struct evstate *s, struct evpriv *priv) {
+    if (epollfd != -1 ) {
+        return errorA(c, s, "Already initialized");
+    }
+  
+    if (evbag_init()) {
+        return errorA(c, s, "Cannot initialize event bag");
+    }
+
+    epollfd = epoll_create1(priv->epollflags);
+    if (epollfd < 0) {
+        return errorA(c, s, "epoll_create1");
+    }
+
+    return nextA(c, s);
 }
 
 
@@ -107,10 +107,8 @@ evloop(volatile int *status) {
     int ret = OK;
     errno = 0;
     
-    DEBUG("FOO %d", evbag_count());
     while (((status == NULL) || (*status > EXIT_FAILURE)) && evbag_count()) {
         nfds = epoll_wait(epollfd, events, evmax, -1);
-        DEBUG("FOO %d", nfds);
         if (nfds < 0) {
             ret = ERR;
             break;

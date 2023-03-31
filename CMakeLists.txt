@@ -16,9 +16,10 @@ include_directories(
 
 
 add_library(core OBJECT core.c)
-add_library(addr OBJECT addr.c)
-add_library(ev OBJECT ev.c)
 add_library(evbag OBJECT evbag.c)
+add_library(ev OBJECT ev.c)
+add_library(addr OBJECT addr.c)
+add_library(tcp OBJECT tcp.c)
 
 
 # Static Library
@@ -83,6 +84,7 @@ add_custom_target(profile
 add_executable(tcpserver 
     tcpserver.c
     $<TARGET_OBJECTS:addr> 
+    $<TARGET_OBJECTS:tcp> 
 )
 target_link_libraries(tcpserver PUBLIC carrow)
 
