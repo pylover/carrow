@@ -73,8 +73,9 @@ evdeinitA() {
         evdearm(i);
         evbag_free(i);
     }
-
+    
     evbags_deinit();
+    errno = 0;
 }
 
 
@@ -134,5 +135,6 @@ evloop(volatile int *status) {
         }
     }
 
+    errno = 0;
     return ret;
 }

@@ -104,14 +104,13 @@ _echoA(struct circuitA *c, struct connstate *s) {
 
 struct circuitA *
 _get_conncircuit() {
-    if (conncircuit != NULL) {
-        return conncircuit;
+    if (conncircuit == NULL) {
+        conncircuit = NEW_A(_conn_error);
+        struct elementA *e = APPEND_A(conncircuit, _echoA, NULL);
+                   loopA(e); 
     }
-    struct circuitA *c = NEW_A(_conn_error);
-    struct elementA *e = APPEND_A(c, _echoA, NULL);
-               loopA(e); 
-
-    return c;
+    
+    return conncircuit;
 }
 
 
@@ -174,9 +173,9 @@ main() {
     if (evloop(&status)) {
         ret = EXIT_FAILURE;
     }
+    close(state.listenfd);
     evdeinitA();
     freeA(conncircuit);
-    DEBUG("DONE");
     freeA(c);
     return ret;
 }

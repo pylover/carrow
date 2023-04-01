@@ -156,7 +156,7 @@ freeA(struct circuitA *c) {
     if (c == NULL) {
         return;
     }
-    
+
     freeE(c->nets);
     free(c);
 }

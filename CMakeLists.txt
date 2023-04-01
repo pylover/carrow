@@ -52,7 +52,11 @@ include(CTest)
 list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
 
-# Valgrind
+# Valgrind, Profiling
+add_custom_target(profile 
+    DEPENDS 
+    profile_test_carrow
+)
 set(VALGRIND_FLAGS
     -s
     --tool=memcheck 
@@ -71,13 +75,6 @@ add_custom_target(profile_test_carrow
     COMMAND "valgrind" 
     ${VALGRIND_FLAGS}
     $<TARGET_FILE:test_carrow>
-)
-
-
-# Profiling
-add_custom_target(profile 
-    DEPENDS 
-    profile_test_carrow
 )
 
 

@@ -2,6 +2,13 @@
 C arrow library
 
 
+## Dependencies
+
+- https://github.com/pylover/mrb
+- https://github.com/pylover/clog
+- https://github.com/pylover/cutest *Only for unittests*
+
+
 ## Usage
 
 Link the following example with `-lcarrow`.
