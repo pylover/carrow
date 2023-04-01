@@ -46,12 +46,13 @@ _echoA(struct circuitA *c, struct connstate *s) {
     struct mrb *b = &(s->buff);
     size_t toread = mrb_space_available(b);
     
-    if (toread) {
+    while (toread) {
         bytes = mrb_readin(b, fd, toread);
         if (bytes < 0) {
             if (EVMUSTWAIT()) {
                 errno = 0;
                 want |= EVIN;
+                break;
             }
             else {
                 return errorA(c, s, "read error");
@@ -62,16 +63,18 @@ _echoA(struct circuitA *c, struct connstate *s) {
         }
         else {
             s->bytesin += bytes;
+            toread -= bytes;
         }
     }
 
     size_t towrite = mrb_space_used(b);
-    if (towrite) {
+    while (towrite) {
         bytes = mrb_writeout(b, fd, towrite);
         if (bytes < 0) {
             if (EVMUSTWAIT()) {
                 errno = 0;
                 want |= EVOUT;
+                break;
             }
             else {
                 return errorA(c, s, "write error");
@@ -82,6 +85,7 @@ _echoA(struct circuitA *c, struct connstate *s) {
         }
         else {
             s->bytesout += bytes;
+            towrite -= bytes;
         }
     }
 
