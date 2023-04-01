@@ -10,10 +10,20 @@
 #include <unistd.h>
 
 
+static struct circuitA *conncircuit = NULL;
+
+
+#define CHUNK   32768
+#define BUFFSIZE 327680
+
+
 struct connstate {
     int fd;
     struct sockaddr remoteaddr;
     struct mrb buff;
+
+    size_t bytesin;
+    size_t bytesout;
 };
 
 
@@ -22,14 +32,10 @@ _conn_error(struct circuitA *c, struct connstate *state, const char *msg) {
     ERROR("Connection error: %s", msg);
     
     close(state->fd);
+    evdearm(state->fd);
     mrb_deinit(&(state->buff));
     free(state);
-    freeA(c);
 }
-
-
-#define CHUNK   1024
-#define BUFFSIZE 2048
 
 
 struct elementA *
@@ -39,7 +45,7 @@ _echoA(struct circuitA *c, struct connstate *s) {
     ssize_t bytes;
     struct mrb *b = &(s->buff);
     size_t toread = mrb_space_available(b);
-
+    
     if (toread) {
         bytes = mrb_readin(b, fd, toread);
         if (bytes < 0) {
@@ -51,9 +57,11 @@ _echoA(struct circuitA *c, struct connstate *s) {
                 return errorA(c, s, "read error");
             }
         }
-
-        if (bytes == 0) {
+        else if (bytes == 0) {
             return errorA(c, s, "read EOF");
+        }
+        else {
+            s->bytesin += bytes;
         }
     }
 
@@ -69,13 +77,16 @@ _echoA(struct circuitA *c, struct connstate *s) {
                 return errorA(c, s, "write error");
             }
         }
-
-        if (bytes == 0) {
+        else if (bytes == 0) {
             return errorA(c, s, "write EOF");
+        }
+        else {
+            s->bytesout += bytes;
         }
     }
 
     if (want) {
+        DEBUG("Echo: in: %lu, out: %lu", s->bytesin, s->bytesout);
         return evwaitA(c, (struct evstate*)s, fd, want);
     }
 
@@ -85,6 +96,9 @@ _echoA(struct circuitA *c, struct connstate *s) {
 
 struct circuitA *
 _get_conncircuit() {
+    if (conncircuit != NULL) {
+        return conncircuit;
+    }
     struct circuitA *c = NEW_A(_conn_error);
     struct elementA *e = APPEND_A(c, _echoA, NULL);
                loopA(e); 
@@ -101,10 +115,16 @@ _newconnA(struct circuitA *c, struct tcpsrvstate *s) {
     struct connstate *cs = malloc(sizeof (struct connstate));
     memcpy(&(cs->remoteaddr), &(s->newconnaddr), s->addrlen);
     cs->fd = s->newconnfd; 
+    cs->bytesin = 0;
+    cs->bytesout = 0;
+
     if (mrb_init(&(cs->buff), BUFFSIZE)) {
         return errorA(c, s, "mrb_init");
     }
     runA(cc, cs);
+
+
+    return nextA(c, s);
 }
 
 
@@ -128,11 +148,13 @@ main() {
         goto failure;
     }
     evdeinitA();
+    freeA(conncircuit);
     freeA(c);
     return EXIT_SUCCESS;
 
 failure:
     evdeinitA();
+    freeA(conncircuit);
     freeA(c);
     return EXIT_FAILURE;
 }

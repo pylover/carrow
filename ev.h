@@ -52,4 +52,8 @@ bool
 isfailedA(struct circuitA *c);
 
 
+int
+evdearm(int fd);
+
+
 #endif

@@ -49,7 +49,7 @@ struct elementA*
 errorA(struct circuitA *c, void *state, const char *format, ...);
 
 
-void
+int
 runA(struct circuitA *c, void *state);
 
 
@@ -57,7 +57,7 @@ void *
 privA(struct circuitA *c);
 
 
-void
+int
 continueA(struct circuitA *c, struct elementA *el, void *state);
 
 

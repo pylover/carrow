@@ -30,8 +30,8 @@ _evarm(struct evbag *bag, int op) {
 }
 
 
-static int
-_evdearm(int fd) {
+int
+evdearm(int fd) {
     return epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL);
 }
 
@@ -70,7 +70,7 @@ evdeinitA() {
             continue;
         }
 
-        _evdearm(i);
+        evdearm(i);
         evbag_free(bag->state->fd);
     }
 }
@@ -126,11 +126,8 @@ evloop(volatile int *status) {
             s = bag->state;
 
             s->events = ev.events;
-            continueA(c, bag->current, s);
-
-            if (isfailedA(c)) {
-                ret = ERR;
-                return ret;
+            if (continueA(c, bag->current, s)) {
+                continue;
             }
         }
     }
