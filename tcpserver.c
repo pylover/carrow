@@ -3,6 +3,7 @@
 #include "addr.h"
 
 #include <clog.h>
+#include <mrb.h>
 
 #include <errno.h>
 #include <stdlib.h>
@@ -12,6 +13,7 @@
 struct connstate {
     int fd;
     struct sockaddr remoteaddr;
+    struct mrb buff;
 };
 
 
@@ -20,25 +22,27 @@ _conn_error(struct circuitA *c, struct connstate *state, const char *msg) {
     ERROR("Connection error: %s", msg);
     
     close(state->fd);
+    mrb_deinit(&(state->buff));
     free(state);
     freeA(c);
 }
 
 
 #define CHUNK   1024
-static char tmp[CHUNK];
-static ssize_t rbytes;
-static ssize_t wbytes;
+#define BUFFSIZE 2048
 
 
 struct elementA *
 _echoA(struct circuitA *c, struct connstate *s) {
     int fd = s->fd;
     int want = 0;
-    
-    if (rbytes == 0) {
-        rbytes = read(fd, tmp, CHUNK);
-        if (rbytes < 0) {
+    ssize_t bytes;
+    struct mrb *b = &(s->buff);
+    size_t toread = mrb_space_available(b);
+
+    if (toread) {
+        bytes = mrb_readin(b, fd, toread);
+        if (bytes < 0) {
             if (EVMUSTWAIT()) {
                 errno = 0;
                 want |= EVIN;
@@ -48,14 +52,15 @@ _echoA(struct circuitA *c, struct connstate *s) {
             }
         }
 
-        if (rbytes == 0) {
+        if (bytes == 0) {
             return errorA(c, s, "read EOF");
         }
     }
 
-    if (rbytes > 0) {
-        wbytes = write(fd, tmp, rbytes);
-        if (wbytes < 0) {
+    size_t towrite = mrb_space_used(b);
+    if (towrite) {
+        bytes = mrb_writeout(b, fd, towrite);
+        if (bytes < 0) {
             if (EVMUSTWAIT()) {
                 errno = 0;
                 want |= EVOUT;
@@ -65,22 +70,15 @@ _echoA(struct circuitA *c, struct connstate *s) {
             }
         }
 
-        if (wbytes == 0) {
+        if (bytes == 0) {
             return errorA(c, s, "write EOF");
-        }
-
-        if (wbytes != rbytes) {
-            return errorA(c, s, "read write size mismatch");
         }
     }
 
-    rbytes = 0;
-    wbytes = 0;
     if (want) {
         return evwaitA(c, (struct evstate*)s, fd, want);
     }
 
-    // DEBUG("fd: %d, r: %ld, w: %ld", fd, rbytes, wbytes);
     return nextA(c, s);
 }
 
@@ -103,6 +101,9 @@ _newconnA(struct circuitA *c, struct tcpsrvstate *s) {
     struct connstate *cs = malloc(sizeof (struct connstate));
     memcpy(&(cs->remoteaddr), &(s->newconnaddr), s->addrlen);
     cs->fd = s->newconnfd; 
+    if (mrb_init(&(cs->buff), BUFFSIZE)) {
+        return errorA(c, s, "mrb_init");
+    }
     runA(cc, cs);
 }
 

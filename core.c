@@ -9,11 +9,19 @@
 #include <errno.h>
 
 
+enum circuitstatus {
+    CIDLE,
+    CPAUSED,
+    CEXECUTING,
+    CFAILED,
+};
+
+
 struct circuitA {
     failA err;
     struct elementA *current;
     struct elementA *nets;
-    void *ptr;
+    enum circuitstatus status;
 };
 
 
@@ -35,6 +43,7 @@ newA(failA error) {
     c->err = error;
     c->current = NULL;
     c->nets = NULL;
+    c->status = CIDLE;
     return c;
 }
 
@@ -227,6 +236,7 @@ errorA(struct circuitA *c, void *state, const char *format, ...) {
         c->err(c, state, msg);
     }
 
+    c->status = CFAILED;
     return NULL;
 }
 
@@ -234,6 +244,7 @@ errorA(struct circuitA *c, void *state, const char *format, ...) {
 void
 continueA(struct circuitA *c, struct elementA *e, void *state) {
     c->current = e;
+    c->status = CEXECUTING;
     runA(c, state);
 }
 
@@ -244,10 +255,21 @@ runA(struct circuitA *c, void *state) {
         c->current = c->nets;
     }
 
+    c->status = CEXECUTING;
     while (c->current) {
         errno = 0;
         c->current = c->current->run(c, state, c->current->priv);
     }
+
+    if (c->status != CFAILED) {
+        c->status = CPAUSED;
+    }
+}
+
+
+bool
+isfailedA(struct circuitA *c) {
+    return c->status == CFAILED;
 }
 
 

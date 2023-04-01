@@ -30,7 +30,7 @@ add_library(carrow
     $<TARGET_OBJECTS:evbag> 
 )
 target_include_directories(carrow PUBLIC "${PROJECT_BINARY_DIR}")
-target_link_libraries(carrow PUBLIC m clog)
+target_link_libraries(carrow PUBLIC m clog mrb)
 
 
 # Install

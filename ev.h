@@ -5,6 +5,7 @@
 #include "core.h"
 
 #include <sys/epoll.h>
+#include <stdbool.h>
 
 
 #define EVMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK))
@@ -45,6 +46,10 @@ evwaitA(struct circuitA *c, struct evstate *s, int fd, int op);
 
 int
 evloop(volatile int *status);
+
+
+bool
+isfailedA(struct circuitA *c);
 
 
 #endif

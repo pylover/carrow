@@ -127,6 +127,11 @@ evloop(volatile int *status) {
 
             s->events = ev.events;
             continueA(c, bag->current, s);
+
+            if (isfailedA(c)) {
+                ret = ERR;
+                return ret;
+            }
         }
     }
 
