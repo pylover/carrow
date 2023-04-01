@@ -8,13 +8,17 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 
 
-static struct circuitA *conncircuit = NULL;
-
-
+#define WORKING 9999
 #define CHUNK   32768
 #define BUFFSIZE 327680
+
+
+static volatile int status = WORKING;
+static struct sigaction old_action;
+static struct circuitA *conncircuit = NULL;
 
 
 struct connstate {
@@ -132,9 +136,28 @@ _newconnA(struct circuitA *c, struct tcpsrvstate *s) {
 }
 
 
+void sighandler(int s) {
+    PRINTE(CR);
+    status = EXIT_SUCCESS;
+}
+
+
+void catch_signal() {
+    struct sigaction new_action = {sighandler, 0, 0, 0, 0};
+    if (sigaction(SIGINT, &new_action, &old_action) != 0) {
+        FATAL("sigaction");
+    }
+}
+
+
 int
 main() {
+    int ret = EXIT_SUCCESS;
     clog_verbosity = CLOG_DEBUG;
+
+    /* Signal */
+    catch_signal();
+
     struct tcpsrvstate state = {
         .bindaddr = "0.0.0.0",
         .bindport = 3030,
@@ -148,17 +171,12 @@ main() {
                loopA(e); 
 
     runA(c, &state);
-    if (evloop(NULL)) {
-        goto failure;
+    if (evloop(&status)) {
+        ret = EXIT_FAILURE;
     }
     evdeinitA();
     freeA(conncircuit);
+    DEBUG("DONE");
     freeA(c);
-    return EXIT_SUCCESS;
-
-failure:
-    evdeinitA();
-    freeA(conncircuit);
-    freeA(c);
-    return EXIT_FAILURE;
+    return ret;
 }

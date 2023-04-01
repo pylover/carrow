@@ -71,8 +71,10 @@ evdeinitA() {
         }
 
         evdearm(i);
-        evbag_free(bag->state->fd);
+        evbag_free(i);
     }
+
+    evbags_deinit();
 }
 
 

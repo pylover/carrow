@@ -255,7 +255,6 @@ runA(struct circuitA *c, void *state) {
             return ERR;
         }
         c->current = e;
-
     }
 }
 
