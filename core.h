@@ -11,10 +11,17 @@ struct elementA;
 struct circuitA;
 
 
+enum circuitstatus {
+    CSOK,
+    CSSTOP,
+    CSDISPOSE
+};
+
+
 typedef struct elementA * (*taskA) (struct circuitA *a, void *state, 
         void *priv);
-typedef void (*okA) (struct circuitA *a, void* state);
-typedef void (*failA) (struct circuitA *a, void* state, const char *msg);
+typedef struct elementA * (*failA) (struct circuitA *a, void* state, 
+        const char *msg);
 
 
 struct circuitA *
@@ -49,16 +56,24 @@ struct elementA*
 errorA(struct circuitA *c, void *state, const char *format, ...);
 
 
-int
-runA(struct circuitA *c, void *state);
-
-
 void *
 privA(struct circuitA *c);
 
 
-int
+enum circuitstatus
 continueA(struct circuitA *c, struct elementA *el, void *state);
+
+
+enum circuitstatus
+runA(struct circuitA *c, void *state);
+
+
+struct elementA *
+disposeA(struct circuitA *c);
+
+
+struct elementA *
+stopA(struct circuitA *c);
 
 
 #endif

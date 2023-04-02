@@ -127,10 +127,15 @@ evloop(volatile int *status) {
             bag = (struct evbag *) ev.data.ptr;
             c = bag->circuit;
             s = bag->state;
+            fd = s->fd;
 
             s->events = ev.events;
-            if (continueA(c, bag->current, s)) {
-                continue;
+            // if (continueA(c, bag->current, s)) {
+            //     continue;
+            // }
+            if (continueA(c, bag->current, s) == CSDISPOSE) {
+                evdearm(fd);
+                evbag_free(fd);
             }
         }
     }

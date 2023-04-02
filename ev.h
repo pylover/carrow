@@ -9,9 +9,10 @@
 
 
 #define EVMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK))
-#define EVIN    EPOLLIN
-#define EVOUT   EPOLLOUT
-#define EVET    EPOLLET
+#define EVIN      EPOLLIN
+#define EVOUT     EPOLLOUT
+#define EVET      EPOLLET
+#define EVONESHOT EPOLLONESHOT
 
 
 struct evglobalstate;

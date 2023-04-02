@@ -24,7 +24,20 @@ struct elementA {
 };
 
 
-static struct elementA __error__;
+static struct elementA __stop__;
+static struct elementA __dispose__;
+
+
+struct elementA *
+disposeA(struct circuitA *c) {
+    return &__dispose__;
+}
+
+
+struct elementA *
+stopA(struct circuitA *c) {
+    return &__stop__;
+}
 
 
 struct circuitA * 
@@ -226,21 +239,21 @@ errorA(struct circuitA *c, void *state, const char *format, ...) {
     }
 
     if (c->err != NULL) {
-        c->err(c, state, msg);
+        return c->err(c, state, msg);
     }
 
-    return &__error__;
+    return &__stop__;
 }
 
 
-int
+enum circuitstatus
 continueA(struct circuitA *c, struct elementA *e, void *state) {
     c->current = e;
     return runA(c, state);
 }
 
 
-int
+enum circuitstatus
 runA(struct circuitA *c, void *state) {
     struct elementA *e;
 
@@ -251,11 +264,20 @@ runA(struct circuitA *c, void *state) {
     while (c->current) {
         errno = 0;
         e = c->current->run(c, state, c->current->priv);
-        if (e == &__error__) {
-            return ERR;
+        if (e == &__stop__) {
+            return CSSTOP;
+        }
+        else if (e == &__dispose__) {
+            goto dispose;
         }
         c->current = e;
     }
+    
+    return CSOK;
+
+dispose:
+    freeA(c);
+    return CSDISPOSE;
 }
 
 

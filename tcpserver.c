@@ -12,17 +12,17 @@
 
 
 #define WORKING 9999
-#define CHUNK   32768
-#define BUFFSIZE 327680
+
+#define PAGESIZE 4096
+#define BUFFSIZE (PAGESIZE * 32768)
 
 
 static volatile int status = WORKING;
 static struct sigaction old_action;
-static struct circuitA *conncircuit = NULL;
 
 
 struct connstate {
-    int fd;
+    struct evstate;
     struct sockaddr remoteaddr;
     struct mrb buff;
 
@@ -31,25 +31,32 @@ struct connstate {
 };
 
 
-void 
-_conn_error(struct circuitA *c, struct connstate *state, const char *msg) {
+struct elementA * 
+_conn_error(struct circuitA *c, struct connstate *s, const char *msg) {
     ERROR("Connection error: %s", msg);
     
-    close(state->fd);
-    evdearm(state->fd);
-    mrb_deinit(&(state->buff));
-    free(state);
+    DEBUG("Closed: %d in: %lu, out: %lu", s->fd, s->bytesin, s->bytesout);
+    close(s->fd);
+    evdearm(s->fd);
+    mrb_deinit(&(s->buff));
+    free(s);
+    return disposeA(c);
 }
 
 
 struct elementA *
 _echoA(struct circuitA *c, struct connstate *s) {
     int fd = s->fd;
+    int events = s->events;
     int want = 0;
     ssize_t bytes;
     struct mrb *b = &(s->buff);
-    size_t toread = mrb_space_available(b);
     
+    bool r = events & EVIN;
+    bool w = events & EVOUT;
+    // DEBUG("Ev: r: %d w: %d", r, w);
+
+    size_t toread = mrb_space_available(b);
     while (toread) {
         bytes = mrb_readin(b, fd, toread);
         if (bytes < 0) {
@@ -94,23 +101,24 @@ _echoA(struct circuitA *c, struct connstate *s) {
     }
 
     if (want) {
-        DEBUG("Echo: in: %lu, out: %lu", s->bytesin, s->bytesout);
-        return evwaitA(c, (struct evstate*)s, fd, want);
+        r = want & EVIN;
+        w = want & EVOUT;
+        DEBUG("Wait: r: %d w: %d, fd: %d in: %lu, out: %lu", r, w, fd, s->bytesin, s->bytesout);
+        return evwaitA(c, (struct evstate*)s, fd, want | EVET | EVONESHOT);
     }
 
+    DEBUG("Next: %d in: %lu, out: %lu", fd, s->bytesin, s->bytesout);
     return nextA(c, s);
 }
 
 
 struct circuitA *
 _get_conncircuit() {
-    if (conncircuit == NULL) {
-        conncircuit = NEW_A(_conn_error);
-        struct elementA *e = APPEND_A(conncircuit, _echoA, NULL);
-                   loopA(e); 
-    }
+    struct circuitA *c = NEW_A(_conn_error);
+    struct elementA *e = APPEND_A(c, _echoA, NULL);
+               loopA(e); 
     
-    return conncircuit;
+    return c;
 }
 
 
@@ -124,12 +132,13 @@ _newconnA(struct circuitA *c, struct tcpsrvstate *s) {
     cs->fd = s->newconnfd; 
     cs->bytesin = 0;
     cs->bytesout = 0;
+    cs->events = EVIN | EVOUT;
+    DEBUG("Open: %d in: %lu, out: %lu", cs->fd, cs->bytesin, cs->bytesout);
 
     if (mrb_init(&(cs->buff), BUFFSIZE)) {
         return errorA(c, s, "mrb_init");
     }
     runA(cc, cs);
-
 
     return nextA(c, s);
 }
@@ -175,7 +184,6 @@ main() {
     }
     close(state.listenfd);
     evdeinitA();
-    freeA(conncircuit);
     freeA(c);
     return ret;
 }

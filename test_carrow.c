@@ -39,9 +39,10 @@ barA(struct circuitA *c, struct state *s, struct barstate *bar) {
 }
 
 
-void
+struct elementA *
 oops(struct circuitA *c, struct state *s, const char *error) {
     strcpy(s->error, error);
+    return stopA(c);
 }
 
 
