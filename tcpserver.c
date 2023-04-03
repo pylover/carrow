@@ -33,9 +33,8 @@ struct connstate {
 
 struct elementA * 
 _conn_error(struct circuitA *c, struct connstate *s, const char *msg) {
-    ERROR("Connection error: %s", msg);
-    
-    DEBUG("Closed: %d in: %lu, out: %lu", s->fd, s->bytesin, s->bytesout);
+    DEBUG("Closed: %d in: %lu, out: %lu: %s", s->fd, s->bytesin, s->bytesout,
+            msg);
     close(s->fd);
     evdearm(s->fd);
     mrb_deinit(&(s->buff));
@@ -48,21 +47,20 @@ struct elementA *
 _echoA(struct circuitA *c, struct connstate *s) {
     int fd = s->fd;
     int events = s->events;
-    int want = 0;
+    int want = EVIN;
     ssize_t bytes;
     struct mrb *b = &(s->buff);
     
-    bool r = events & EVIN;
-    bool w = events & EVOUT;
-    // DEBUG("Ev: r: %d w: %d", r, w);
-
     size_t toread = mrb_space_available(b);
+    if ((events & EVIN) && (toread == 0)) {
+        return errorA(c, s, "buffer full");
+    }
+
     while (toread) {
         bytes = mrb_readin(b, fd, toread);
         if (bytes < 0) {
             if (EVMUSTWAIT()) {
                 errno = 0;
-                want |= EVIN;
                 break;
             }
             else {
@@ -79,36 +77,32 @@ _echoA(struct circuitA *c, struct connstate *s) {
     }
 
     size_t towrite = mrb_space_used(b);
-    while (towrite) {
-        bytes = mrb_writeout(b, fd, towrite);
-        if (bytes < 0) {
-            if (EVMUSTWAIT()) {
-                errno = 0;
-                want |= EVOUT;
-                break;
+    if (towrite || (events & EVOUT)) {
+        /* Ready for write */
+        while (towrite) {
+            bytes = mrb_writeout(b, fd, towrite);
+            if (bytes < 0) {
+                if (EVMUSTWAIT()) {
+                    errno = 0;
+                    want |= EVOUT;
+                    break;
+                }
+                else {
+                    return errorA(c, s, "write error");
+                }
+            }
+            else if (bytes == 0) {
+                return errorA(c, s, "write EOF");
             }
             else {
-                return errorA(c, s, "write error");
+                s->bytesout += bytes;
+                towrite -= bytes;
             }
         }
-        else if (bytes == 0) {
-            return errorA(c, s, "write EOF");
-        }
-        else {
-            s->bytesout += bytes;
-            towrite -= bytes;
-        }
     }
 
-    if (want) {
-        r = want & EVIN;
-        w = want & EVOUT;
-        DEBUG("Wait: r: %d w: %d, fd: %d in: %lu, out: %lu", r, w, fd, s->bytesin, s->bytesout);
-        return evwaitA(c, (struct evstate*)s, fd, want | EVET | EVONESHOT);
-    }
-
-    DEBUG("Next: %d in: %lu, out: %lu", fd, s->bytesin, s->bytesout);
-    return nextA(c, s);
+    DEBUG("Wait: fd: %d in: %lu, out: %lu", fd, s->bytesin, s->bytesout);
+    return evwaitA(c, (struct evstate*)s, fd, want | EVONESHOT);
 }
 
 
