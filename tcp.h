@@ -12,7 +12,7 @@ struct tcpsrvstate {
     struct evstate;
 
     const char *bindaddr;
-    unsigned short bindport;
+    signed short bindport;
     int backlog;
 
     struct sockaddr bind;
@@ -24,12 +24,36 @@ struct tcpsrvstate {
 };
 
 
+enum tcpclientstatus {
+    TCSIDLE,
+    TCSCONNECTING,
+    TCSCONNECTED,
+    TCSFAILED,
+};
+
+
+struct tcpclientstate {
+    struct evstate;
+
+    const char *host;
+    const char *port;
+    enum tcpclientstatus status;
+
+    struct sockaddr localaddr;
+    struct sockaddr remoteaddr;
+};
+
+
 struct elementA *
 listenA(struct circuitA *c, struct tcpsrvstate *s);
 
 
 struct elementA *
 acceptA(struct circuitA *c, struct tcpsrvstate *s);
+
+
+struct elementA *
+connectA(struct circuitA *c, struct tcpclientstate *s);
 
 
 #endif

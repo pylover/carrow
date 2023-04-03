@@ -32,6 +32,7 @@ _evarm(struct evbag *bag, int op) {
 
 int
 evdearm(int fd) {
+    evbag_free(fd);
     return epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL);
 }
 
@@ -71,7 +72,6 @@ evdeinitA() {
         }
 
         evdearm(i);
-        evbag_free(i);
     }
     
     evbags_deinit();
@@ -132,7 +132,6 @@ evloop(volatile int *status) {
             s->events = ev.events;
             if (continueA(c, bag->current, s) == CSDISPOSE) {
                 evdearm(fd);
-                evbag_free(fd);
             }
         }
     }

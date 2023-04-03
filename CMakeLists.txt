@@ -92,3 +92,18 @@ add_custom_target(profile_tcpserver
     $<TARGET_FILE:tcpserver>
 )
 
+
+# TCP Client
+add_executable(tcpclient 
+    tcpclient.c
+    $<TARGET_OBJECTS:addr> 
+    $<TARGET_OBJECTS:tcp> 
+)
+target_link_libraries(tcpclient PUBLIC carrow)
+add_custom_target(run_tcpclient COMMAND $<TARGET_FILE:tcpclient>)
+add_custom_target(profile_tcpclient
+    COMMAND "valgrind" 
+    ${VALGRIND_FLAGS}
+    $<TARGET_FILE:tcpclient>
+)
+
