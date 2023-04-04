@@ -172,11 +172,13 @@ connectA(struct circuitA *c, struct tcpclientstate *s) {
            completed immediately. It is possible to epoll(2) for
            completion by selecting the socket for writing.
         */
+        errno = 0;
         s->status = TCSCONNECTING;
         return evwaitA(c, (struct evstate*)s, s->fd, EVOUT);
     }
 
     /* Seems everything is ok. */
+    errno = 0;
     s->status = TCSCONNECTED;
     return _connect_continue(c, s);
 }

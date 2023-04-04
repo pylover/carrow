@@ -130,8 +130,20 @@ evloop(volatile int *status) {
             fd = s->fd;
 
             s->events = ev.events;
-            if (continueA(c, bag->current, s) == CSDISPOSE) {
-                evdearm(fd);
+            DEBUG("Continue");
+            enum circuitstatus st = continueA(c, bag->current, s);
+            switch (st) {
+                case CSDISPOSE:
+                    DEBUG("DISPOSE");
+                    evdearm(fd);
+                    break;
+                case CSSTOP:
+                    DEBUG("STOP");
+                    evdearm(fd);
+                    break;
+                case CSOK:
+                    DEBUG("OK");
+                    break;
             }
         }
     }

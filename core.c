@@ -242,7 +242,7 @@ errorA(struct circuitA *c, void *state, const char *format, ...) {
         return c->err(c, state, msg);
     }
 
-    return &__stop__;
+    return stopA(c);
 }
 
 
@@ -265,19 +265,18 @@ runA(struct circuitA *c, void *state) {
         errno = 0;
         e = c->current->run(c, state, c->current->priv);
         if (e == &__stop__) {
+            c->current = NULL;
             return CSSTOP;
         }
         else if (e == &__dispose__) {
-            goto dispose;
+            c->current = NULL;
+            freeA(c);
+            return CSDISPOSE;
         }
         c->current = e;
     }
     
     return CSOK;
-
-dispose:
-    freeA(c);
-    return CSDISPOSE;
 }
 
 
