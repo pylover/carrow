@@ -6,7 +6,6 @@
 
 
 struct CCORO;
-struct CSTATE;
 
 
 typedef struct CCORO 
@@ -17,6 +16,10 @@ typedef struct CCORO
 typedef struct CCORO 
     (*CNAME(rejector)) (struct CCORO *self, struct CSTATE *state, int fd, 
             int no);
+
+
+void
+CNAME(resolve) (struct CCORO *self, struct CSTATE *s, int fd, int op);
 
 
 #define __FILENAME__ \

@@ -73,7 +73,17 @@ CNAME(reject) (struct CCORO *self, struct CSTATE *s, int fd, int no,
 
 int
 CNAME(arm) (struct CCORO *c, struct CSTATE *s, int fd, int op) {
-    return carrow_arm(c, s, fd, op);
+    return carrow_arm(c, s, fd, op, (carrow_evhandler)CNAME(resolve));
+}
+
+
+void
+CNAME(resolve) (struct CCORO *self, struct CSTATE *s, int fd, int op) {
+    struct CCORO c = *self;
+
+    while (c.resolve != NULL) {
+        c = c.resolve(&c, s, fd, op);
+    }
 }
 
 
@@ -81,7 +91,19 @@ void
 CNAME(run) (CNAME(resolver) f, CNAME(rejector) r, struct CSTATE *state) {
     struct CCORO c = {f, r};
 
-    while (c.resolve != NULL) {
-        c = c.resolve(&c, state, -1, 0);
-    }
+    CNAME(resolve)(&c, state, -1, 0);
+}
+
+
+int
+CNAME(loop) (volatile int *status) {
+    return carrow_evloop(status);
+}
+
+
+int
+CNAME(runloop) (CNAME(resolver) f, CNAME(rejector) r, struct CSTATE *state,
+        volatile int *status) {
+    CNAME(run)(f, r, state);
+    return CNAME(loop)(status);
 }
