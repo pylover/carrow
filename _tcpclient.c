@@ -158,10 +158,16 @@ main() {
     struct elementA *e = APPEND_A(c, _pipeA, NULL);
                loopA(e); 
 
+    /* Initialize event loop */
+    carrow_init();
+
+    /* Run it */
     runA(c, &state);
     if (evloop(&status)) {
         ret = EXIT_FAILURE;
     }
+
+    /* Cleanup */
     evdeinitA();
     freeA(c);
     mrb_deinit(&(state.inbuff));

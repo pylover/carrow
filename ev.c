@@ -37,48 +37,6 @@ evdearm(int fd) {
 }
 
 
-struct elementA *
-evinitA(struct circuitA *c, struct evstate *s) {
-    if (epollfd != -1 ) {
-        return errorA(c, s, "Already initialized");
-    }
-  
-    if (evbag_init()) {
-        return errorA(c, s, "Cannot initialize event bag");
-    }
-
-    epollfd = epoll_create1(0);
-    if (epollfd < 0) {
-        return errorA(c, s, "epoll_create1");
-    }
-
-    return nextA(c, s);
-}
-
-
-void 
-evdeinitA() {
-    int i;
-    struct evbag *bag;
-
-    close(epollfd);
-    epollfd = -1;
-
-    for (i = 0; i < evbag_max(); i++) {
-        bag = evbag_get(i);
-
-        if (bag == NULL) {
-            continue;
-        }
-
-        evdearm(i);
-    }
-    
-    evbags_deinit();
-    errno = 0;
-}
-
-
 struct elementA * 
 evwaitA(struct circuitA *c, struct evstate *s, int fd, int op) {
     s->fd = fd;

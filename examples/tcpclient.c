@@ -16,9 +16,13 @@ struct foobar {
 #define CNAME(n) foobarcoro_ ## n
 
 #include "carrow.c"
+#include "evloop.h"
 
 
 int
 main() {
+    carrow_evloop_init();
+
+    carrow_evloop_deinit();
     return 0;
 }

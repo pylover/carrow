@@ -14,6 +14,9 @@ include_directories(
 )
 
 
+add_library(evloop OBJECT evloop.c evloop.h)
+
+
 # Install
 install(FILES carrow.h DESTINATION "include")
 install(FILES carrow.c DESTINATION "include")
@@ -49,7 +52,9 @@ set(VALGRIND_FLAGS
 
 
 # Test carrow
-add_executable(test_carrow test_carrow.c)
+add_executable(test_carrow 
+    $<TARGET_OBJECTS:evloop>
+    test_carrow.c)
 target_include_directories(test_carrow PUBLIC "${PROJECT_BINARY_DIR}")
 target_link_libraries(test_carrow PUBLIC clog)
 add_test(NAME test_carrow COMMAND test_carrow)
