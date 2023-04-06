@@ -13,7 +13,6 @@
 struct CCORO {
     CNAME(resolver) resolve;
     CNAME(rejector) reject;
-    int status;
 };
 
 
@@ -24,14 +23,20 @@ CNAME(new) (CNAME(resolver) f, CNAME(rejector) r) {
 
 
 struct CCORO
+CNAME(from) (struct CCORO *base, CNAME(resolver) f) {
+    return (struct CCORO){f, base->reject};
+}
+
+
+struct CCORO
 CNAME(ok) () {
-    return (struct CCORO){NULL, NULL, 0};
+    return (struct CCORO){NULL, NULL};
 }
 
 
 struct CCORO
 CNAME(failed) () {
-    return (struct CCORO){NULL, NULL, -1};
+    return (struct CCORO){NULL, NULL};
 }
 
 
@@ -115,63 +120,61 @@ CNAME(arm) (struct CCORO *c, struct CSTATE *s, int fd, int op) {
 }
 
 
-int
+void
 CNAME(run) (CNAME(resolver) f, CNAME(rejector) r, struct CSTATE *state) {
     struct CCORO c = {f, r};
-    struct CCORO n;
 
-    do {
-        n = c.resolve(&c, state, -1, 0);
-        if ((n.resolve == NULL) && (n.reject == NULL)) {
-            return 0;
-        }
-        else if (n.resolve == NULL) {
-            return -1;
-        }
-
-        c = n;
-    } while (true);
+    while (c.resolve != NULL) {
+        c = c.resolve(&c, state, -1, 0);
+    }
 }
 
 
-// int
-// CNAME(loop) (CNAME(resolver) f, CNAME(rejector) r, CSTATE *state) {
-// 
-//     while (((status == NULL) || (*status > EXIT_FAILURE)) && evbag_count()) {
-//         nfds = epoll_wait(epollfd, events, evmax, -1);
-//         if (nfds < 0) {
-//             ret = ERR;
-//             break;
-//         }
-// 
-//         if (nfds == 0) {
-//             ret = OK;
-//             break;
-//         }
-// 
-//         for (i = 0; i < nfds; i++) {
-//             ev = events[i];
-//             bag = (struct evbag *) ev.data.ptr;
-//             c = bag->circuit;
-//             s = bag->state;
-//             fd = s->fd;
-// 
-//             s->events = ev.events;
-//             DEBUG("Continue");
-//             enum circuitstatus st = continueA(c, bag->current, s);
-//             switch (st) {
-//                 case CSDISPOSE:
-//                     DEBUG("DISPOSE");
-//                     evdearm(fd);
-//                     break;
-//                 case CSSTOP:
-//                     DEBUG("STOP");
-//                     evdearm(fd);
-//                     break;
-//                 case CSOK:
-//                     DEBUG("OK");
-//                     break;
-//             }
-//         }
-//     }
-// }
+int
+CNAME(loop) (volatile int *status, struct CSTATE *state) {
+    int i;
+    int nfds;
+    int ret = 0;
+    // struct epoll_event ev;
+    // struct epoll_event events[EVMAX];
+
+    // while ((status == NULL) || (*status > EXIT_FAILURE)) {
+    //     nfds = epoll_wait(epollfd, events, evmax, -1);
+    //     if (nfds < 0) {
+    //         ret = -1;
+    //         break;
+    //     }
+
+    //     if (nfds == 0) {
+    //         ret = 0;
+    //         break;
+    //     }
+
+    //     for (i = 0; i < nfds; i++) {
+    // //         ev = events[i];
+    // //         bag = (struct evbag *) ev.data.ptr;
+    // //         c = bag->circuit;
+    // //         s = bag->state;
+    // //         fd = s->fd;
+
+    // //         s->events = ev.events;
+    // //         DEBUG("Continue");
+    // //         enum circuitstatus st = continueA(c, bag->current, s);
+    // //         switch (st) {
+    // //             case CSDISPOSE:
+    // //                 DEBUG("DISPOSE");
+    // //                 evdearm(fd);
+    // //                 break;
+    // //             case CSSTOP:
+    // //                 DEBUG("STOP");
+    // //                 evdearm(fd);
+    // //                 break;
+    // //             case CSOK:
+    // //                 DEBUG("OK");
+    // //                 break;
+    // //         }
+    //     }
+    // }
+
+    return ret;
+}

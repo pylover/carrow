@@ -40,7 +40,7 @@ fooA(struct foobarcoro *self, struct foobar *s, int fd, int op) {
     }
     s->foo++;
     s->all++;
-    return foobarcoro_new(barA, errorA);
+    return foobarcoro_from(self, barA);
 }
 
 
@@ -48,7 +48,7 @@ struct foobarcoro
 barA(struct foobarcoro *self, struct foobar *s, int fd, int op) {
     s->bar++;
     s->all++;
-    return foobarcoro_new(fooA, errorA);
+    return foobarcoro_from(self, fooA);
 }
 
 
@@ -57,7 +57,7 @@ test_foo_loop() {
     static char b[CHUNK_SIZE];
     struct foobar state = {0, 0, 0};
     
-    eqint(0, foobarcoro_run(fooA, errorA, &state));
+    foobarcoro_run(fooA, errorA, &state);
     eqint(10, state.all);
     eqint(5, state.foo);
     eqint(5, state.bar);
