@@ -27,13 +27,7 @@ CNAME(from) (struct CCORO *base, CNAME(resolver) f) {
 
 
 struct CCORO
-CNAME(ok) () {
-    return (struct CCORO){NULL, NULL};
-}
-
-
-struct CCORO
-CNAME(failed) () {
+CNAME(stop) () {
     return (struct CCORO){NULL, NULL};
 }
 
@@ -67,7 +61,7 @@ CNAME(reject) (struct CCORO *self, struct CSTATE *s, int fd, int no,
     }
 
     errno = 0;
-    return CNAME(failed)();
+    return CNAME(stop)();
 }
 
 
@@ -80,7 +74,7 @@ CNAME(arm) (struct CCORO *c, struct CSTATE *s, int fd, int op) {
 void
 CNAME(resolve) (struct CCORO *self, struct CSTATE *s, int fd, int op) {
     struct CCORO c = *self;
-
+    
     while (c.resolve != NULL) {
         c = c.resolve(&c, s, fd, op);
     }

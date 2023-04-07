@@ -10,9 +10,9 @@
 
 #define EVCHUNK     128
 static unsigned int _openmax;
-static unsigned int _bagscount;
+static volatile unsigned int _bagscount;
 static struct _evbag **_bags;
-static int _epollfd;
+static int _epollfd = -1;
 
 
 /* Disposables */
@@ -38,15 +38,21 @@ struct _evbag {
 static struct _evbag *
 _evbag_new(struct _coro *self, void *state, int fd, 
         carrow_evhandler handler) {
-    struct _evbag *bag = malloc(sizeof(struct _evbag));
+
+    struct _evbag *bag = _bags[fd];
     if (bag == NULL) {
-        FATAL("Out of memory");
+        bag = malloc(sizeof(struct _evbag));
+        if (bag == NULL) {
+            FATAL("Out of memory");
+        }
+        _bags[fd] = bag;
+        _bagscount++;
+        bag->fd = fd;
+        bag->coro = *self;
+        bag->state = state;
+        bag->handler = handler;
     }
 
-    bag->fd = fd;
-    bag->coro = *self;
-    bag->state = state;
-    bag->handler = handler;
     return bag;
 }
 
@@ -141,7 +147,8 @@ carrow_dearm(int fd) {
     struct _evbag *bag = _bags[fd];
 
     if (bag != NULL) {
-        _dispose_asap(bag->fd);
+        _bagscount--;
+        _dispose_asap(fd);
     }
 
     return epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, NULL);

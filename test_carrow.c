@@ -29,7 +29,7 @@ barA(struct foobarcoro *self, struct foobar *s, int fd, int op);
 
 struct foobarcoro
 errorA(struct foobarcoro *self, struct foobar *s, int fd, int no) {
-    return foobarcoro_ok();
+    return foobarcoro_stop();
 }
 
 

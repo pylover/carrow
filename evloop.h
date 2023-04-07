@@ -2,6 +2,16 @@
 #define CARROW_EVLOOP_H
 
 
+#include <sys/epoll.h>
+
+
+#define EVMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+#define EVIN      EPOLLIN
+#define EVOUT     EPOLLOUT
+#define EVET      EPOLLET
+#define EVONESHOT EPOLLONESHOT
+
+
 typedef void (*carrow_evhandler) (void *coro, void *state, int fd, int op);
 
 
