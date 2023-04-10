@@ -15,6 +15,7 @@ include_directories(
 
 
 add_library(evloop OBJECT evloop.c evloop.h)
+add_library(tcpc OBJECT tcpc.c tcpc.h)
 
 
 # Install

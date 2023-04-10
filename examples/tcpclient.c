@@ -1,55 +1,23 @@
+#include "tcpc.h"
+#include "carrow.c"
+
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 
 
-#undef CSTATE
-#undef CCORO
-#undef CNAME
-#undef CARROW_H
-
-
-enum tcpclientstatus {
-    TCSIDLE,
-    TCSCONNECTING,
-    TCSCONNECTED,
-    TCSFAILED,
-};
-
-
-struct tcpconn {
-    const char *host;
-    const char *port;
-    enum tcpclientstatus status;
-
-    struct sockaddr localaddr;
-    struct sockaddr remoteaddr;
-};
-
-
-#define CSTATE  tcpconn
-#define CCORO  tcpc
-#define CNAME(n) tcpc_ ## n
-
-
-#include "carrow.c"
-#include "evloop.h"
-
-
-struct tcpc 
-errorA(struct tcpc *self, struct tcpconn *conn, int fd, int no) {
-    ERROR("ERROR");
+struct tcpcc 
+errorA(struct tcpcc *self, struct tcpc *conn, int fd, int no) {
     carrow_dearm(fd);
     return tcpc_stop();
 }
 
 
-struct tcpc 
-stdioA(struct tcpc *self, struct tcpconn *conn, int fd, int op) {
-    int bytes;
+struct tcpcc 
+stdioA(struct tcpcc *self, struct tcpc *conn, int fd, int op) {
+    ssize_t bytes;
     char tmp[1024];
-
+    
+    DEBUG("stdio");
     if (tcpc_arm(self, conn, STDIN_FILENO, EVIN)) {
         return REJECT(self, conn, fd, "tcpc_arm(%d)", STDIN_FILENO);
     }
@@ -60,11 +28,12 @@ stdioA(struct tcpc *self, struct tcpconn *conn, int fd, int op) {
             return REJECT(self, conn, fd, "read(%d)", fd);
         }
 
-        if (bytes == 0) {
+        write(STDOUT_FILENO, tmp, bytes);
+        
+        if ((bytes == 0) || (bytes == 1 && tmp[0] == 4)) {
             return REJECT(self, conn, fd, "read(%d) EOF", fd);
         }
         
-        write(STDOUT_FILENO, tmp, bytes);
     }
     return tcpc_stop();
 }
@@ -73,8 +42,9 @@ stdioA(struct tcpc *self, struct tcpconn *conn, int fd, int op) {
 int
 main() {
     int ret = EXIT_SUCCESS;
+    // tty_cannonical();
     clog_verbosity = CLOG_DEBUG;
-    struct tcpconn conn = {
+    struct tcpc conn = {
         .host = "0.0.0.0",
         .port = "3030",
     };
@@ -84,5 +54,6 @@ main() {
         ret = EXIT_FAILURE;
     }
     carrow_evloop_deinit();
+    // tty_restore();
     return ret;
 }
