@@ -9,25 +9,23 @@ struct CCORO;
 
 
 typedef struct CCORO 
-    (*CNAME(resolver)) (struct CCORO *self, struct CSTATE *state, int fd, 
-            int op);
+    (*CNAME(resolver)) (struct CCORO *self, struct CSTATE *state);
 
 
 typedef struct CCORO 
-    (*CNAME(rejector)) (struct CCORO *self, struct CSTATE *state, int fd, 
-            int no);
+    (*CNAME(rejector)) (struct CCORO *self, struct CSTATE *state, int no);
 
 
 void
-CNAME(resolve) (struct CCORO *self, struct CSTATE *s, int fd, int op);
+CNAME(resolve) (struct CCORO *self, struct CSTATE *s);
 
 
 #define __FILENAME__ \
     (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 
-#define REJECT(c, s, fd, ...) \
-    CNAME(reject) (c, s, fd, errno, __FILENAME__, __LINE__, __FUNCTION__, \
+#define REJECT(c, s, ...) \
+    CNAME(reject) (c, s, errno, __FILENAME__, __LINE__, __FUNCTION__, \
             __VA_ARGS__)
 
 

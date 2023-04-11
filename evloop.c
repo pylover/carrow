@@ -28,7 +28,7 @@ struct _coro {
 
     
 struct _evbag {
-    int fd;
+    struct event *event;
     struct _coro coro;
     void *state;
     carrow_evhandler handler;
@@ -36,8 +36,9 @@ struct _evbag {
 
 
 static struct _evbag *
-_evbag_new(struct _coro *self, void *state, int fd, 
+_evbag_new(struct _coro *self, void *state, struct event *e, 
         carrow_evhandler handler) {
+    int fd = e->fd;
 
     struct _evbag *bag = _bags[fd];
     if (bag == NULL) {
@@ -47,9 +48,9 @@ _evbag_new(struct _coro *self, void *state, int fd,
         }
         _bags[fd] = bag;
         _bagscount++;
-        bag->fd = fd;
         bag->coro = *self;
         bag->state = state;
+        bag->event = e;
         bag->handler = handler;
     }
 
@@ -122,17 +123,18 @@ carrow_evloop_deinit() {
 
 
 int
-carrow_arm(void *c, void *state, int fd, int op, carrow_evhandler handler) {
-    struct epoll_event ev;
-    struct _evbag *bag = _evbag_new(c, state, fd, handler);
+carrow_arm(void *c, void *state, struct event *e, carrow_evhandler handler) {
+    struct epoll_event ee;
+    struct _evbag *bag = _evbag_new(c, state, e, handler);
     
-    ev.events = op;
-    ev.data.ptr = bag;
+    ee.events = e->op;
+    int fd = e->fd;
+    ee.data.fd = fd;
     
-    if (epoll_ctl(_epollfd, EPOLL_CTL_MOD, fd, &ev)) {
+    if (epoll_ctl(_epollfd, EPOLL_CTL_MOD, fd, &ee)) {
         if (errno == ENOENT) {
             errno = 0;
-            return epoll_ctl(_epollfd, EPOLL_CTL_ADD, fd, &ev);
+            return epoll_ctl(_epollfd, EPOLL_CTL_ADD, fd, &ee);
         }
 
         return -1;
@@ -162,7 +164,7 @@ carrow_evloop(volatile int *status) {
     int nfds;
     int ret = 0;
     struct _evbag *bag;
-    struct epoll_event ev;
+    struct epoll_event ee;
     struct epoll_event events[EVCHUNK];
 
     while (((status == NULL) || (*status > EXIT_FAILURE)) && _bagscount) {
@@ -178,16 +180,17 @@ carrow_evloop(volatile int *status) {
         }
 
         for (i = 0; i < nfds; i++) {
-            ev = events[i];
-            bag = (struct _evbag *) ev.data.ptr;
-            fd = bag->fd;
+            ee = events[i];
+            fd = ee.data.fd;
+            bag = _bags[fd];
 
-            if (_bags[fd] == NULL) {
-                /* Event is already removed */
+            if (bag == NULL) {
+                /* Event already removed */
                 continue;
             }
 
-            bag->handler(&(bag->coro), bag->state, fd, ev.events);
+            bag->event->op = ee.events;
+            bag->handler(&(bag->coro), bag->state);
         }
 
         while (_disposablescount) {

@@ -12,11 +12,17 @@
 #define EVONESHOT EPOLLONESHOT
 
 
-typedef void (*carrow_evhandler) (void *coro, void *state, int fd, int op);
+struct event {
+    int fd;
+    int op;
+};
+
+
+typedef void (*carrow_evhandler) (void *coro, void *state);
 
 
 int
-carrow_arm(void *c, void *state, int fd, int op, carrow_evhandler handler);
+carrow_arm(void *c, void *state, struct event *e, carrow_evhandler handler);
 
 
 int

@@ -33,7 +33,7 @@ CNAME(stop) () {
 
 
 struct CCORO
-CNAME(reject) (struct CCORO *self, struct CSTATE *s, int fd, int no,
+CNAME(reject) (struct CCORO *self, struct CSTATE *s, int no,
         const char *filename, int lineno, const char *function,
         const char *format, ... ) {
     va_list args;
@@ -57,7 +57,7 @@ CNAME(reject) (struct CCORO *self, struct CSTATE *s, int fd, int no,
     }
    
     if (self->reject != NULL) {
-        return self->reject(self, s, fd, no);
+        return self->reject(self, s, no);
     }
 
     errno = 0;
@@ -66,17 +66,17 @@ CNAME(reject) (struct CCORO *self, struct CSTATE *s, int fd, int no,
 
 
 int
-CNAME(arm) (struct CCORO *c, struct CSTATE *s, int fd, int op) {
-    return carrow_arm(c, s, fd, op, (carrow_evhandler)CNAME(resolve));
+CNAME(arm) (struct CCORO *c, struct CSTATE *s, struct event *e) {
+    return carrow_arm(c, s, e, (carrow_evhandler)CNAME(resolve));
 }
 
 
 void
-CNAME(resolve) (struct CCORO *self, struct CSTATE *s, int fd, int op) {
+CNAME(resolve) (struct CCORO *self, struct CSTATE *s) {
     struct CCORO c = *self;
     
     while (c.resolve != NULL) {
-        c = c.resolve(&c, s, fd, op);
+        c = c.resolve(&c, s);
     }
 }
 
@@ -85,7 +85,7 @@ void
 CNAME(run) (CNAME(resolver) f, CNAME(rejector) r, struct CSTATE *state) {
     struct CCORO c = {f, r};
 
-    CNAME(resolve)(&c, state, -1, 0);
+    CNAME(resolve)(&c, state);
 }
 
 

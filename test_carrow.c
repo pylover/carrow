@@ -24,19 +24,19 @@ struct foobar {
 
 
 struct foobarcoro
-barA(struct foobarcoro *self, struct foobar *s, int fd, int op);
+barA(struct foobarcoro *self, struct foobar *s);
 
 
 struct foobarcoro
-errorA(struct foobarcoro *self, struct foobar *s, int fd, int no) {
+errorA(struct foobarcoro *self, struct foobar *s, int no) {
     return foobarcoro_stop();
 }
 
 
 struct foobarcoro
-fooA(struct foobarcoro *self, struct foobar *s, int fd, int op) {
+fooA(struct foobarcoro *self, struct foobar *s) {
     if (s->all >= 10) {
-        return REJECT(self, s, fd, "All done");
+        return REJECT(self, s, "All done");
     }
     s->foo++;
     s->all++;
@@ -45,7 +45,7 @@ fooA(struct foobarcoro *self, struct foobar *s, int fd, int op) {
 
 
 struct foobarcoro
-barA(struct foobarcoro *self, struct foobar *s, int fd, int op) {
+barA(struct foobarcoro *self, struct foobar *s) {
     s->bar++;
     s->all++;
     return foobarcoro_from(self, fooA);

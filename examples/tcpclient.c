@@ -6,32 +6,36 @@
 
 
 struct tcpcc 
-errorA(struct tcpcc *self, struct tcpc *conn, int fd, int no) {
-    carrow_dearm(fd);
+errorA(struct tcpcc *self, struct tcpc *conn, int no) {
+    carrow_dearm(STDIN_FILENO);
     return tcpc_stop();
 }
 
 
 struct tcpcc 
-stdioA(struct tcpcc *self, struct tcpc *conn, int fd, int op) {
+stdioA(struct tcpcc *self, struct tcpc *conn) {
     ssize_t bytes;
     char tmp[1024];
+    static struct event ev = {
+        .fd = STDIN_FILENO,
+        .op = EVIN,
+    };
     
     DEBUG("stdio");
-    if (tcpc_arm(self, conn, STDIN_FILENO, EVIN)) {
-        return REJECT(self, conn, fd, "tcpc_arm(%d)", STDIN_FILENO);
+    if (tcpc_arm(self, conn, &ev)) {
+        return REJECT(self, conn, "tcpc_arm(%d)", STDIN_FILENO);
     }
 
-    if ((fd == STDIN_FILENO) && (op & EVIN)) {
-        bytes = read(fd, tmp, 1024);
+    if ((ev.fd == STDIN_FILENO) && (ev.op & EVIN)) {
+        bytes = read(ev.fd, tmp, 1024);
         if (bytes == -1) {
-            return REJECT(self, conn, fd, "read(%d)", fd);
+            return REJECT(self, conn, "read(%d)", ev.fd);
         }
 
         write(STDOUT_FILENO, tmp, bytes);
         
         if ((bytes == 0) || (bytes == 1 && tmp[0] == 4)) {
-            return REJECT(self, conn, fd, "read(%d) EOF", fd);
+            return REJECT(self, conn, "read(%d) EOF", ev.fd);
         }
         
     }
