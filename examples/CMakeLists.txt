@@ -2,6 +2,7 @@
 add_executable(tcpclient
     $<TARGET_OBJECTS:evloop>
     $<TARGET_OBJECTS:tcp>
+    $<TARGET_OBJECTS:tty>
     tcpclient.c
 )
 target_include_directories(tcpclient PUBLIC "${CMAKE_SOURCE_DIR}")

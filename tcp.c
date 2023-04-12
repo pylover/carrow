@@ -1,5 +1,6 @@
 #include "tcp.h"
-#include "evloop.h"
+
+#include <clog.h>
 
 #include <netdb.h>
 #include <unistd.h>
@@ -9,7 +10,7 @@
 
 int
 tcp_connect(struct tcpconn *conn, const char *hostname, const char*port) {
-    int err;
+    int err = 0;
     int ret;
     int optlen = 4;
     int cfd;
@@ -26,6 +27,7 @@ tcp_connect(struct tcpconn *conn, const char *hostname, const char*port) {
     if (conn->status == TCSCONNECTING) {
         ret = getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, &err, &optlen);
         if (ret || err) {
+            errno = err;
             goto failed;
         }
 
@@ -84,6 +86,7 @@ tcp_connect(struct tcpconn *conn, const char *hostname, const char*port) {
            completed immediately. It is possible to epoll(2) for
            completion by selecting the socket for writing.
         */
+        goto wait;
     }
 
 success:
@@ -103,6 +106,5 @@ wait:
 
 failed:
     conn->status = TCSFAILED;
-    close(conn->fd);
     return -1;
 }

@@ -1,4 +1,5 @@
 #include "tcp.h"
+#include "tty.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -26,13 +27,19 @@ struct state {
 
 struct tcpcc 
 errorA(struct tcpcc *self, struct state *state, int no) {
-    carrow_dearm(STDIN_FILENO);
+    struct tcpconn *conn = &(state->conn);
+
+    if (conn->fd != -1) {
+        tcpc_dearm(conn->fd);
+    }
+    close(conn->fd);
     return tcpc_stop();
 }
 
 
 struct tcpcc 
 ioA(struct tcpcc *self, struct state *state) {
+    DEBUG("IO A");
     return tcpc_stop();
 }
 
@@ -49,20 +56,20 @@ connectA(struct tcpcc *self, struct state *state) {
         goto failed;
     }
 
+    ev.fd = conn->fd;
+    ev.op = EVOUT | EVONESHOT;
     if (errno == EINPROGRESS) {
-        ev.fd = conn->fd;
-        ev.op = EVOUT | EVONESHOT;
+        errno = 0;
         if (tcpc_arm(self, state, &ev)) {
             goto failed;
         }
+
+        return tcpc_stop();
     }
 
     return tcpc_from(self, ioA);
 
 failed:
-    if (conn->fd == -1) {
-        tcpc_dearm(conn->fd);
-    }
     return REJECT(self, state, "tcp_connect(%s:%s)", state->hostname, 
             state->port);
 }
@@ -97,10 +104,13 @@ failed:
 int
 main() {
     int ret = EXIT_SUCCESS;
-    // tty_cannonical();
+    if (isatty(STDIN_FILENO) && stdin_noncannonical()) {
+        return EXIT_FAILURE;
+    }
+
     clog_verbosity = CLOG_DEBUG;
     struct state state = {
-        .hostname = "0.0.0.0",
+        .hostname = "localhost",
         .port = "3030",
     };
     carrow_evloop_init();
@@ -109,6 +119,8 @@ main() {
         ret = EXIT_FAILURE;
     }
     carrow_evloop_deinit();
-    // tty_restore();
+    if (stdin_restore()) {
+        return EXIT_FAILURE;
+    }
     return ret;
 }
