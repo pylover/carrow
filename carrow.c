@@ -71,6 +71,12 @@ CNAME(arm) (struct CCORO *c, struct CSTATE *s, struct event *e) {
 }
 
 
+int
+CNAME(dearm) (int fd) {
+    return carrow_dearm(fd);
+}
+
+
 void
 CNAME(resolve) (struct CCORO *self, struct CSTATE *s) {
     struct CCORO c = *self;

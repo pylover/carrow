@@ -1,37 +1,30 @@
-#ifndef CARROW_TCP_H
-#define CARROW_TCP_H
+#ifndef TCP_H
+#define TCP_H
 
 
-#include "ev.h"
+#include <sys/types.h>
+#include <sys/socket.h>
 
 
-
-struct tcpsrvstate {
-    struct evstate;
-
-    const char *bindaddr;
-    signed short bindport;
-    int backlog;
-
-    struct sockaddr bind;
-    int listenfd;
-
-    struct sockaddr newconnaddr;
-    socklen_t addrlen;
-    int newconnfd;
+enum tcpconnstatus {
+    TCSIDLE,
+    TCSCONNECTING,
+    TCSCONNECTED,
+    TCSFAILED,
 };
 
 
-struct elementA *
-listenA(struct circuitA *c, struct tcpsrvstate *s);
+struct tcpconn {
+    enum tcpconnstatus status;
+
+    int fd;
+    struct sockaddr localaddr;
+    struct sockaddr remoteaddr;
+};
 
 
-struct elementA *
-acceptA(struct circuitA *c, struct tcpsrvstate *s);
-
-
-struct elementA *
-connectA(struct circuitA *c, struct tcpclientstate *s);
+int
+tcp_connect(struct tcpconn *c, const char *hostname, const char*port);
 
 
 #endif
