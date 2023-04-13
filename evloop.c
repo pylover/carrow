@@ -128,7 +128,6 @@ carrow_arm(void *c, void *state, struct event *e, carrow_evhandler handler) {
     struct _evbag *bag = _evbag_new(c, state, e, handler);
     
     int fd = e->fd;
-    DEBUG("arming: %d", fd);
     ee.events = e->op;
     ee.data.fd = fd;
     
