@@ -12,8 +12,8 @@ struct state {
     const char *port;
 
     struct tcpconn conn;
-    struct mrb *inbuff;
-    struct mrb *outbuff;
+    mrb_t inbuff;
+    mrb_t outbuff;
 };
 
 
