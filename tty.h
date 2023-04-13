@@ -3,11 +3,11 @@
 
 
 int
-stdin_restore();
+stdin_nonblock();
 
 
-int 
-stdin_noncannonical();
+int
+stdout_nonblock();
 
 
 #endif

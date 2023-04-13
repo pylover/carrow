@@ -48,11 +48,11 @@ _evbag_new(struct _coro *self, void *state, struct event *e,
         }
         _bags[fd] = bag;
         _bagscount++;
-        bag->coro = *self;
-        bag->state = state;
-        bag->event = e;
         bag->handler = handler;
     }
+    bag->coro = *self;
+    bag->event = e;
+    bag->state = state;
 
     return bag;
 }
@@ -127,8 +127,9 @@ carrow_arm(void *c, void *state, struct event *e, carrow_evhandler handler) {
     struct epoll_event ee;
     struct _evbag *bag = _evbag_new(c, state, e, handler);
     
-    ee.events = e->op;
     int fd = e->fd;
+    DEBUG("arming: %d", fd);
+    ee.events = e->op;
     ee.data.fd = fd;
     
     if (epoll_ctl(_epollfd, EPOLL_CTL_MOD, fd, &ee)) {
@@ -190,6 +191,7 @@ carrow_evloop(volatile int *status) {
             }
 
             bag->event->op = ee.events;
+            bag->event->fd = fd;
             bag->handler(&(bag->coro), bag->state);
         }
 

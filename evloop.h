@@ -5,7 +5,8 @@
 #include <sys/epoll.h>
 
 
-#define EVMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+#define EVMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK) \
+        || (errno == EINPROGRESS))
 #define EVIN      EPOLLIN
 #define EVOUT     EPOLLOUT
 #define EVET      EPOLLET

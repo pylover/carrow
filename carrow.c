@@ -80,7 +80,7 @@ CNAME(dearm) (int fd) {
 void
 CNAME(resolve) (struct CCORO *self, struct CSTATE *s) {
     struct CCORO c = *self;
-    
+   
     while (c.resolve != NULL) {
         c = c.resolve(&c, s);
     }

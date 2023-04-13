@@ -1,6 +1,11 @@
 #include "tty.h"
 
+#include <clog.h>
+
 #include <unistd.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <termios.h>
 #include <stdbool.h>
 
@@ -9,14 +14,57 @@ static bool dirty = false;
 static struct termios ttysave;
 
 
-int
+static void
 stdin_restore() {
     if (!dirty) {
-        return 0;
+        return;
     };
     
     if (tcsetattr(STDIN_FILENO, TCSANOW, &ttysave)) {
         ERROR("Cannot restore tty attributes");
+    }
+}
+
+
+static int 
+stdin_noncanonical() {
+    struct termios ttystate;
+    
+    // preserve  the terminal state
+    if (tcgetattr(STDIN_FILENO, &ttystate)) {
+        ERROR("Cannot get tty attributes");
+        return -1;
+    }
+    ttysave = ttystate;
+    dirty = true;
+    atexit(stdin_restore);
+    // ttystate.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+    // ttystate.c_oflag &= ~(OPOST);
+    // ttystate.c_cflag |= (CS8);
+    // ttystate.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+    ttystate.c_cc[VMIN] = 0;
+    ttystate.c_cc[VTIME] = 1;
+
+    //set the terminal attributes.
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &ttystate)) {
+        ERROR("Cannot set tty attributes");
+        return -1;
+    }
+    
+    return 0;
+}
+
+
+static int
+_nonblock(int fd) {
+    if (!isatty(fd)) {
+        ERROR("Pipes or regular files are not supported");
+        errno = 0;
+        return -1;
+    }
+
+    int status = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+    if (status == -1){
         return -1;
     }
 
@@ -24,26 +72,17 @@ stdin_restore() {
 }
 
 
-int 
-stdin_noncannonical() {
-    struct termios ttystate;
-
-    // preserve  the terminal state
-    if (tcgetattr(STDIN_FILENO, &ttystate)) {
-        ERROR("Cannot get tty attributes");
+int
+stdin_nonblock() {
+    if (_nonblock(STDIN_FILENO)) {
         return -1;
     }
-    ttysave = ttystate;
-    ttystate.c_lflag &= ~(ICANON | ECHO);
-    ttystate.c_cc[VMIN] = 1;
-    ttystate.c_cc[VTIME] = 0;
+    
+    return stdin_noncanonical();
+}
 
-    //set the terminal attributes.
-    if (tcsetattr(STDIN_FILENO, TCSANOW, &ttystate)) {
-        ERROR("Cannot set tty attributes");
-        return -1;
-    }
 
-    dirty = true;
-    return 0;
+int
+stdout_nonblock() {
+    return _nonblock(STDOUT_FILENO);
 }

@@ -6,7 +6,7 @@ add_executable(tcpclient
     tcpclient.c
 )
 target_include_directories(tcpclient PUBLIC "${CMAKE_SOURCE_DIR}")
-target_link_libraries(tcpclient PUBLIC clog)
+target_link_libraries(tcpclient PUBLIC clog mrb)
 add_custom_target(run_tcpclient $<TARGET_FILE:tcpclient>)
 add_custom_target(profile_tcpclient
     COMMAND "valgrind" 
