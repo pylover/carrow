@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 
 
 struct state {
@@ -33,14 +34,29 @@ struct state {
 #define BUFFSIZE (PAGESIZE * 32768)
 
 
+#define WORKING 99999999
+volatile int status = WORKING;
+static struct sigaction old_action;
+static struct event ev = {
+    .fd = STDIN_FILENO,
+    .op = EVIN,
+};
+
+
+
 struct tcpcc 
 errorA(struct tcpcc *self, struct state *state, int no) {
     struct tcpconn *conn = &(state->conn);
-
+    
     if (conn->fd != -1) {
-        tcpc_dearm(conn->fd);
+        tcpc_dearm(ev.fd);
     }
-    close(conn->fd);
+
+    if (ev.fd > 2) {
+        close(conn->fd);
+    }
+
+    errno = 0;
     return tcpc_stop();
 }
 
@@ -53,11 +69,6 @@ ioA(struct tcpcc *self, struct state *state) {
     struct mrb *out = state->outbuff;
     struct tcpconn *conn = &(state->conn);
    
-    static struct event ev = {
-        .fd = STDIN_FILENO,
-        .op = EVIN,
-    };
-
     if (ev.fd == STDIN_FILENO) {
         avail = mrb_available(out);
         while (avail) {
@@ -205,14 +216,33 @@ failed:
 }
 
 
+void sighandler(int s) {
+    PRINTE(CR);
+    status = EXIT_SUCCESS;
+}
+
+
+void catch_signal() {
+    struct sigaction new_action = {sighandler, 0, 0, 0, 0};
+    if (sigaction(SIGINT, &new_action, &old_action) != 0) {
+        FATAL("sigaction");
+    }
+}
+
+
 int
 main() {
     int ret = EXIT_SUCCESS;
+    clog_verbosity = CLOG_DEBUG;
+
+    /* Signal */
+    catch_signal();
+
+    /* Non blocking starndard input/output */
     if (stdin_nonblock() || stdout_nonblock()) {
         return EXIT_FAILURE;
     }
 
-    clog_verbosity = CLOG_DEBUG;
     struct state state = {
         .hostname = "localhost",
         .port = "3030",
@@ -227,7 +257,7 @@ main() {
 
     carrow_evloop_init();
     
-    if (tcpc_runloop(connectA, errorA, &state, NULL)) {
+    if (tcpc_runloop(connectA, errorA, &state, &status)) {
         ret = EXIT_FAILURE;
     }
 

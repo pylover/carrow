@@ -43,15 +43,6 @@ add_custom_target(profile
     DEPENDS 
     profile_test_carrow
 )
-set(VALGRIND_FLAGS
-    -s
-    --tool=memcheck 
-    --leak-check=yes 
-    --show-reachable=yes 
-    --num-callers=20 
-    --track-fds=yes 
-)
-
 
 # Test carrow
 add_executable(test_carrow 

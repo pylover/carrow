@@ -65,9 +65,32 @@ CNAME(reject) (struct CCORO *self, struct CSTATE *s, int no,
 }
 
 
+static void
+CNAME(evhandler) (struct CCORO *self, struct CSTATE *s, 
+        enum carrow_evstatus status) {
+    struct CCORO c = *self;
+    int eno;
+   
+    if (status != EE_OK) {
+        if (status == EE_ERR) {
+            eno = errno;
+        }
+        else {
+            eno = EINTR;
+        }
+        c.reject(self, s, eno);
+        return;
+    }
+
+    while (c.resolve != NULL) {
+        c = c.resolve(&c, s);
+    }
+}
+
+
 int
 CNAME(arm) (struct CCORO *c, struct CSTATE *s, struct event *e) {
-    return carrow_arm(c, s, e, (carrow_evhandler)CNAME(resolve));
+    return carrow_arm(c, s, e, (carrow_evhandler)CNAME(evhandler));
 }
 
 

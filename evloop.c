@@ -39,7 +39,7 @@ static struct _evbag *
 _evbag_new(struct _coro *self, void *state, struct event *e, 
         carrow_evhandler handler) {
     int fd = e->fd;
-
+    
     struct _evbag *bag = _bags[fd];
     if (bag == NULL) {
         bag = malloc(sizeof(struct _evbag));
@@ -58,13 +58,36 @@ _evbag_new(struct _coro *self, void *state, struct event *e,
 }
 
 
-void
+static void
+_evbag_free(int fd) {
+    struct _evbag *bag = _bags[fd];
+    if (bag == NULL) {
+        return;
+    }
+    
+    free(bag);
+    _bags[fd] = NULL;
+}
+
+
+static void
 _dispose_asap(int fd) {
     if ((DISPOSABLESMAX - _disposablescount) == 1) {
         FATAL("Disposables overflow");
     }
 
     _disposables[_disposablescount++] = fd;
+}
+
+
+static void
+_dispose_all() {
+    int fd;
+
+    while (_disposablescount) {
+        fd = _disposables[--_disposablescount];
+        _evbag_free(fd);
+    }
 }
 
 
@@ -98,30 +121,6 @@ carrow_evloop_init() {
 }
 
 
-void
-carrow_evloop_deinit() {
-    int i;
-    struct _evbag *bag;
-
-    close(_epollfd);
-    _epollfd = -1;
-
-    for (i = 0; i < _openmax; i++) {
-        bag = _bags[i];
-
-        if (bag == NULL) {
-            continue;
-        }
-
-        carrow_dearm(i);
-    }
-    
-    free(_bags);
-    _bags = NULL;
-    errno = 0;
-}
-
-
 int
 carrow_arm(void *c, void *state, struct event *e, carrow_evhandler handler) {
     struct epoll_event ee;
@@ -147,7 +146,7 @@ carrow_arm(void *c, void *state, struct event *e, carrow_evhandler handler) {
 int
 carrow_dearm(int fd) {
     struct _evbag *bag = _bags[fd];
-
+    
     if (bag != NULL) {
         _bagscount--;
         _dispose_asap(fd);
@@ -167,7 +166,8 @@ carrow_evloop(volatile int *status) {
     struct epoll_event ee;
     struct epoll_event events[EVCHUNK];
 
-    while (((status == NULL) || (*status > EXIT_FAILURE)) && _bagscount) {
+    while (_bagscount && ((status == NULL) || (*status > EXIT_FAILURE))) {
+        errno = 0;
         nfds = epoll_wait(_epollfd, events, EVCHUNK, -1);
         if (nfds < 0) {
             ret = -1;
@@ -191,21 +191,43 @@ carrow_evloop(volatile int *status) {
 
             bag->event->op = ee.events;
             bag->event->fd = fd;
-            bag->handler(&(bag->coro), bag->state);
+            bag->handler(&(bag->coro), bag->state, EE_OK);
         }
-
-        while (_disposablescount) {
-            fd = _disposables[--_disposablescount];
-            bag = _bags[fd];
-
-            if (bag == NULL) {
-                continue;
-            }
-
-            free(bag);
-            _bags[fd] = NULL;
-        }
+        
+        _dispose_all();
     }
 
+terminate:
+
+    for (i = 0; i < _openmax; i++) {
+        bag = _bags[i];
+        if (bag == NULL) {
+            continue;
+        }
+        
+        bag->event->fd = i;
+        bag->handler(&(bag->coro), bag->state, EE_TERM);
+    }
+    
+    _dispose_all();
+
     return ret;
+}
+
+
+void
+carrow_evloop_deinit() {
+    int i;
+    struct _evbag *bag;
+
+    close(_epollfd);
+    _epollfd = -1;
+
+    // for (i = 0; i < _openmax; i++) {
+    //     _evbag_free(i);
+    // }
+    
+    free(_bags);
+    _bags = NULL;
+    errno = 0;
 }

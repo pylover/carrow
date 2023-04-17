@@ -1,4 +1,13 @@
 
+set(VALGRIND_FLAGS
+    -s
+    --tool=memcheck 
+    --leak-check=yes 
+    --show-reachable=yes 
+    --num-callers=20 
+    --track-fds=yes 
+)
+
 add_executable(tcpclient
     $<TARGET_OBJECTS:evloop>
     $<TARGET_OBJECTS:tcp>

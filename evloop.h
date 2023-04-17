@@ -13,13 +13,21 @@
 #define EVONESHOT EPOLLONESHOT
 
 
+enum carrow_evstatus {
+    EE_OK,
+    EE_ERR,
+    EE_TERM,
+};
+
+
 struct event {
     int fd;
     int op;
 };
 
 
-typedef void (*carrow_evhandler) (void *coro, void *state);
+typedef void (*carrow_evhandler) (void *coro, void *state, 
+        enum carrow_evstatus);
 
 
 int
