@@ -223,10 +223,6 @@ carrow_evloop_deinit() {
     close(_epollfd);
     _epollfd = -1;
 
-    // for (i = 0; i < _openmax; i++) {
-    //     _evbag_free(i);
-    // }
-    
     free(_bags);
     _bags = NULL;
     errno = 0;
