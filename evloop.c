@@ -168,6 +168,7 @@ carrow_evloop(volatile int *status) {
 
     while (_bagscount && ((status == NULL) || (*status > EXIT_FAILURE))) {
         errno = 0;
+        // DEBUG("bags: %d", _bagscount);
         nfds = epoll_wait(_epollfd, events, EVCHUNK, -1);
         if (nfds < 0) {
             ret = -1;
