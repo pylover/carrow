@@ -158,7 +158,7 @@ ioA(struct tcpcc *self, struct state *state) {
     inavail -= bytes;
     inused += bytes;
 
-    /* reset errno */
+    /* reset errno and rearm events*/
     errno = 0;
     int op;
 
