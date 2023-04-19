@@ -54,7 +54,7 @@ errorA(struct tcpcc *self, struct state *state, int no) {
         tcpc_dearm(conn->fd);
     }
     
-    if (ev.fd > 2) {
+    if (conn->fd > 2) {
         close(conn->fd);
     }
 
@@ -137,7 +137,7 @@ ioA(struct tcpcc *self, struct state *state) {
     /* stdout write */
     bytes = writeA(in, STDOUT_FILENO, inused);
     if (bytes == -1) {
-        return REJECT(self, state, "read(%d)", ev.fd);
+        return REJECT(self, state, "write(%d)", ev.fd);
     }
     inused -= bytes;
     inavail += bytes;
@@ -145,7 +145,7 @@ ioA(struct tcpcc *self, struct state *state) {
     /* tcp write */
     bytes = writeA(out, conn->fd, outused);
     if (bytes == -1) {
-        return REJECT(self, state, "read(%d)", ev.fd);
+        return REJECT(self, state, "writeead(%d)", ev.fd);
     }
     outused -= bytes;
     outavail += bytes;
