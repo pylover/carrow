@@ -43,7 +43,6 @@ static struct event ev = {
 };
 
 
-
 struct tcpcc 
 errorA(struct tcpcc *self, struct state *state, int no) {
     struct tcpconn *conn = &(state->conn);
@@ -164,25 +163,25 @@ ioA(struct tcpcc *self, struct state *state) {
 
     /* stdin */
     if (outavail && tcpc_arm(self, state, &ev, STDIN_FILENO, 
-                EVIN | EVONESHOT)) {
+                EVIN | EVONESHOT | EVET)) {
         return REJECT(self, state, "arm(%d)", ev.fd);
     }
 
     /* stdout */
     if (inused && tcpc_arm(self, state, &ev, STDOUT_FILENO, 
-                EVOUT | EVONESHOT)) {
+                EVOUT | EVONESHOT | EVET)) {
         return REJECT(self, state, "arm(%d)", ev.fd);
     }
 
     /* tcp socket */
     if (outused || inavail) {
-        op = EVONESHOT;
+        op = EVONESHOT | EVET;
         if (inavail) {
-            op = EVIN;
+            op |= EVIN;
         }
 
         if (outused) {
-            op = EVOUT;
+            op |= EVOUT;
         }
 
         if (tcpc_arm(self, state, &ev, conn->fd, op)) {
@@ -197,10 +196,10 @@ ioA(struct tcpcc *self, struct state *state) {
 struct tcpcc 
 connectA(struct tcpcc *self, struct state *state) {
     struct tcpconn *conn = &(state->conn);
-    static struct event ev = {
-        .fd = -1,
-        .op = EVIN,
-    };
+    // static struct event ev = {
+    //     .fd = -1,
+    //     .op = EVIN,
+    // };
 
     if (tcp_connect(conn, state->hostname, state->port)) {
         goto failed;

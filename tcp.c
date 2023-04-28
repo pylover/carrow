@@ -1,4 +1,5 @@
 #include "tcp.h"
+#include "addr.h"
 
 #include <clog.h>
 
@@ -6,6 +7,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+
+
+#define TCPBACKLOG 2
 
 
 int
@@ -107,4 +111,38 @@ wait:
 failed:
     conn->status = TCSFAILED;
     return -1;
+}
+
+
+int
+tcp_listen(const char *bindaddr, unsigned short bindport) {
+    int fd;
+    int res;
+    int option = 1;
+    struct sockaddr addr;
+    
+    /* Parse listen address */
+    carrow_sockaddr_parse(&addr, bindaddr, bindport);
+    
+    /* Create socket */
+    fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+
+    /* Allow reuse the address */
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+
+    /* Bind to tcp port */
+    res = bind(fd, &addr, sizeof(addr)); 
+    if (res) {
+        ERROR("Cannot bind on: %s", carrow_sockaddr_dump(&addr));
+        return -1;
+    }
+
+    /* Listen */
+    res = listen(fd, TCPBACKLOG); 
+    INFO("Listening on: %s", carrow_sockaddr_dump(&addr));
+    if (res) {
+        ERROR("Cannot listen on: %s", carrow_sockaddr_dump(&addr));
+        return -1;
+    }
+    return fd;
 }

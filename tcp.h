@@ -27,4 +27,8 @@ int
 tcp_connect(struct tcpconn *c, const char *hostname, const char*port);
 
 
+int
+tcp_listen(const char *bindaddr, unsigned short bindport);
+
+
 #endif

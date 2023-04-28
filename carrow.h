@@ -24,9 +24,9 @@ CNAME(resolve) (struct CCORO *self, struct CSTATE *s);
     (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 
-#define REJECT(c, s, ...) \
-    CNAME(reject) (c, s, errno, __FILENAME__, __LINE__, __FUNCTION__, \
-            __VA_ARGS__)
+#define DBG errno, __FILENAME__, __LINE__, __FUNCTION__
 
+
+#define REJECT(c, s, ...) CNAME(reject) (c, s, DBG, __VA_ARGS__)
 
 #endif
