@@ -32,8 +32,7 @@ struct state {
 /* TCP connection carrow types and function */
 struct connstate {
     struct tcpconn conn;
-    mrb_t inbuff;
-    mrb_t outbuff;
+    mrb_t buff;
     struct event ev;
 };
 
@@ -63,30 +62,128 @@ static struct event ev = {
 };
 
 
+ssize_t
+writeA(struct mrb *b, int fd, size_t count) {
+    int res = 0;
+    int bytes;
+
+    if (ev.fd != fd || !(ev.op & EVOUT)) {
+        return 0;
+    }
+
+    while (count) {
+        bytes = mrb_writeout(b, fd, count);
+        if (bytes <= 0) {
+            break;
+        }
+        res += bytes;
+        count -= bytes;
+    }
+    
+    if ((bytes <= 0) && (!EVMUSTWAIT())) {
+        return -1;
+    }
+
+    return res;
+}
+
+
+ssize_t
+readA(struct mrb *b, int fd, size_t count) {
+    int res = 0;
+    int bytes;
+
+    if (ev.fd != fd || !(ev.op & EVIN)) {
+        return 0;
+    }
+
+    while (count) {
+        bytes = mrb_readin(b, fd, count);
+        if (bytes <= 0) {
+            break;
+        }
+        res += bytes;
+        count -= bytes;
+    }
+    
+    if ((bytes <= 0) && (!EVMUSTWAIT())) {
+        return -1;
+    }
+
+    return res;
+}
+
+
 struct tcpcc 
 connerrorA(struct tcpcc *self, struct connstate *state, int no) {
+    struct tcpconn *conn = &(state->conn);
+    if (conn->fd != -1) {
+        tcpcc_dearm(conn->fd);
+        close(conn->fd);
+    }
+    if (mrb_destroy(state->buff)) {
+        ERROR("Cannot dispose buffers.");
+    }
+
+    DEBUG("connerrorA: %p", state);
+    free(state);
     return tcpcc_stop();
 }
 
 
 struct tcpcc 
 echoA(struct tcpcc *self, struct connstate *state) {
-    // if (fd == -1) {
-    //     if (EVMUSTWAIT()) {
-    //         errno = 0;
-    //         if (tcpcc_arm(&echo, c, &(c->ev), state->listenfd, EVIN)) {
-    //             return tcps_reject(self, state, DBG, "tcpcc_arm");
-    //         }
-    //     }
-    //     return tcps_reject(self, state, DBG, "accept4");
-    // }
+    ssize_t bytes;
+    struct mrb *buff = state->buff;
+    struct tcpconn *conn = &(state->conn);
+    int avail = mrb_available(buff);
+    int used = mrb_used(buff);
 
+    /* tcp read */
+    bytes = readA(buff, conn->fd, avail);
+    DEBUG("read: %ld", bytes);
+    if (bytes == -1) {
+        return tcpcc_reject(self, state, DBG, "read(%d)", conn->fd);
+    }
+    avail -= bytes;
+    used += bytes;
+
+    /* tcp write */
+    bytes = writeA(buff, conn->fd, used);
+    DEBUG("write: %ld", bytes);
+    if (bytes == -1) {
+        return tcpcc_reject(self, state, DBG, "writeead(%d)", conn->fd);
+    }
+    used -= bytes;
+    avail += bytes;
+
+    /* reset errno and rearm events*/
+    errno = 0;
+    int op;
+
+    /* tcp socket */
+    op = EVONESHOT | EVET;
+    if (avail) {
+        op |= EVIN;
+    }
+
+    if (used) {
+        op |= EVOUT;
+    }
+
+    if (tcpcc_arm(self, state, &ev, conn->fd, op)) {
+        return REJECT(self, state, "arm(%d)", ev.fd);
+    }
+
+    DEBUG("Echo: %d", state->conn.fd);
     return tcpcc_stop();
 }
 
 
 struct tcpsc 
 errorA(struct tcpsc *self, struct state *state, int no) {
+    tcps_dearm(state->listenfd);
+    close(state->listenfd);
     return tcps_stop();
 }
 
@@ -96,13 +193,9 @@ acceptA(struct tcpsc *self, struct state *state) {
     DEBUG("New conn");
     int fd;
     socklen_t addrlen = sizeof(struct sockaddr);
-    struct connstate *c = malloc(sizeof(struct connstate));
-    if (c == NULL) {
-        return tcps_reject(self, state, DBG, "Out of memory");
-    }
+    struct sockaddr addr;
 
-    fd = accept4(state->listenfd, &(c->conn.remoteaddr), &addrlen, 
-            SOCK_NONBLOCK);
+    fd = accept4(state->listenfd, &addr, &addrlen, SOCK_NONBLOCK);
     if (fd == -1) {
         if (EVMUSTWAIT()) {
             errno = 0;
@@ -114,10 +207,18 @@ acceptA(struct tcpsc *self, struct state *state) {
         return tcps_reject(self, state, DBG, "accept4");
     }
 
+    struct connstate *c = malloc(sizeof(struct connstate));
+    if (c == NULL) {
+        return tcps_reject(self, state, DBG, "Out of memory");
+    }
+
     c->conn.fd = fd;
+    c->conn.remoteaddr = addr;
+    c->buff = mrb_create(BUFFSIZE);
     static struct tcpcc echo = {echoA, connerrorA};
     if (tcpcc_arm(&echo, c, &(c->ev), c->conn.fd, 
                 EVIN | EVOUT | EVONESHOT)) {
+        free(c);
         return tcps_reject(self, state, DBG, "tcpcc_arm");
     }
 }
@@ -162,11 +263,6 @@ main() {
 
     /* Signal */
     catch_signal();
-
-    /* Non blocking starndard input/output */
-    if (stdin_nonblock() || stdout_nonblock()) {
-        return EXIT_FAILURE;
-    }
 
     struct state state = {
         .bindaddr = "0.0.0.0",
