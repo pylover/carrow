@@ -33,7 +33,7 @@ CNAME(stop) () {
 
 
 struct CCORO
-CNAME(reject) (struct CCORO *self, struct CSTATE *s, int no,
+CNAME(reject) (struct CCORO *self, CSTATE *s, int no,
         const char *filename, int lineno, const char *function,
         const char *format, ... ) {
     va_list args;
@@ -66,7 +66,7 @@ CNAME(reject) (struct CCORO *self, struct CSTATE *s, int no,
 
 
 static void
-CNAME(evhandler) (struct CCORO *self, struct CSTATE *s, 
+CNAME(evhandler) (struct CCORO *self, CSTATE *s, 
         enum carrow_evstatus status) {
     struct CCORO c = *self;
     int eno;
@@ -89,7 +89,7 @@ CNAME(evhandler) (struct CCORO *self, struct CSTATE *s,
 
 
 int
-CNAME(arm) (struct CCORO *c, struct CSTATE *s, struct event *e, int fd, 
+CNAME(arm) (struct CCORO *c, CSTATE *s, struct event *e, int fd, 
         int op) {
     e->fd = fd;
     e->op = op;
@@ -104,7 +104,7 @@ CNAME(dearm) (int fd) {
 
 
 void
-CNAME(resolve) (struct CCORO *self, struct CSTATE *s) {
+CNAME(resolve) (struct CCORO *self, CSTATE *s) {
     struct CCORO c = *self;
    
     while (c.resolve != NULL) {
@@ -114,7 +114,7 @@ CNAME(resolve) (struct CCORO *self, struct CSTATE *s) {
 
 
 void
-CNAME(run) (CNAME(resolver) f, CNAME(rejector) r, struct CSTATE *state) {
+CNAME(run) (CNAME(resolver) f, CNAME(rejector) r, CSTATE *state) {
     struct CCORO c = {f, r};
 
     CNAME(resolve)(&c, state);
@@ -128,7 +128,7 @@ CNAME(loop) (volatile int *status) {
 
 
 int
-CNAME(runloop) (CNAME(resolver) f, CNAME(rejector) r, struct CSTATE *state,
+CNAME(runloop) (CNAME(resolver) f, CNAME(rejector) r, CSTATE *state,
         volatile int *status) {
     CNAME(run)(f, r, state);
     return CNAME(loop)(status);

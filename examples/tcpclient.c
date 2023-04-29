@@ -23,10 +23,9 @@ struct state {
 #undef CNAME
 #undef CARROW_H
 
-#define CSTATE   state
-#define CCORO    tcpcc
+#define CSTATE   struct state
+#define CCORO    tcpc
 #define CNAME(n) tcpc_ ## n
-#include "carrow.h"
 #include "carrow.c"
 
 
@@ -43,8 +42,8 @@ static struct event ev = {
 };
 
 
-struct tcpcc 
-errorA(struct tcpcc *self, struct state *state, int no) {
+struct tcpc 
+errorA(struct tcpc *self, struct state *state, int no) {
     struct tcpconn *conn = &(state->conn);
     
     tcpc_dearm(STDIN_FILENO);
@@ -114,8 +113,8 @@ readA(struct mrb *b, int fd, size_t count) {
 }
 
 
-struct tcpcc 
-ioA(struct tcpcc *self, struct state *state) {
+struct tcpc 
+ioA(struct tcpc *self, struct state *state) {
     ssize_t bytes;
     struct mrb *in = state->inbuff;
     struct mrb *out = state->outbuff;
@@ -193,8 +192,8 @@ ioA(struct tcpcc *self, struct state *state) {
 }
 
 
-struct tcpcc 
-connectA(struct tcpcc *self, struct state *state) {
+struct tcpc 
+connectA(struct tcpc *self, struct state *state) {
     struct tcpconn *conn = &(state->conn);
     // static struct event ev = {
     //     .fd = -1,

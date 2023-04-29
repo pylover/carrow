@@ -9,15 +9,15 @@ struct CCORO;
 
 
 typedef struct CCORO 
-    (*CNAME(resolver)) (struct CCORO *self, struct CSTATE *state);
+    (*CNAME(resolver)) (struct CCORO *self, CSTATE *state);
 
 
 typedef struct CCORO 
-    (*CNAME(rejector)) (struct CCORO *self, struct CSTATE *state, int no);
+    (*CNAME(rejector)) (struct CCORO *self, CSTATE *state, int no);
 
 
 void
-CNAME(resolve) (struct CCORO *self, struct CSTATE *s);
+CNAME(resolve) (struct CCORO *self, CSTATE *s);
 
 
 #define __FILENAME__ \
