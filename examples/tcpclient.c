@@ -128,7 +128,7 @@ ioA(struct tcpcc *self, struct state *state) {
     /* stdin read */
     bytes = readA(out, STDIN_FILENO, outavail);
     if (bytes == -1) {
-        return REJECT(self, state, "read(%d)", ev.fd);
+        return tcpc_reject(self, state, DBG, "read(%d)", ev.fd);
     }
     outavail -= bytes;
     outused += bytes;
@@ -136,7 +136,7 @@ ioA(struct tcpcc *self, struct state *state) {
     /* stdout write */
     bytes = writeA(in, STDOUT_FILENO, inused);
     if (bytes == -1) {
-        return REJECT(self, state, "write(%d)", ev.fd);
+        return tcpc_reject(self, state, DBG, "write(%d)", ev.fd);
     }
     inused -= bytes;
     inavail += bytes;
@@ -144,7 +144,7 @@ ioA(struct tcpcc *self, struct state *state) {
     /* tcp write */
     bytes = writeA(out, conn->fd, outused);
     if (bytes == -1) {
-        return REJECT(self, state, "writeead(%d)", ev.fd);
+        return tcpc_reject(self, state, DBG, "writeead(%d)", ev.fd);
     }
     outused -= bytes;
     outavail += bytes;
@@ -152,7 +152,7 @@ ioA(struct tcpcc *self, struct state *state) {
     /* tcp read */
     bytes = readA(in, conn->fd, inavail);
     if (bytes == -1) {
-        return REJECT(self, state, "read(%d)", conn->fd);
+        return tcpc_reject(self, state, DBG, "read(%d)", conn->fd);
     }
     inavail -= bytes;
     inused += bytes;
@@ -164,13 +164,13 @@ ioA(struct tcpcc *self, struct state *state) {
     /* stdin */
     if (outavail && tcpc_arm(self, state, &ev, STDIN_FILENO, 
                 EVIN | EVONESHOT | EVET)) {
-        return REJECT(self, state, "arm(%d)", ev.fd);
+        return tcpc_reject(self, state, DBG, "arm(%d)", ev.fd);
     }
 
     /* stdout */
     if (inused && tcpc_arm(self, state, &ev, STDOUT_FILENO, 
                 EVOUT | EVONESHOT | EVET)) {
-        return REJECT(self, state, "arm(%d)", ev.fd);
+        return tcpc_reject(self, state, DBG, "arm(%d)", ev.fd);
     }
 
     /* tcp socket */
@@ -185,7 +185,7 @@ ioA(struct tcpcc *self, struct state *state) {
         }
 
         if (tcpc_arm(self, state, &ev, conn->fd, op)) {
-            return REJECT(self, state, "arm(%d)", ev.fd);
+            return tcpc_reject(self, state, DBG, "arm(%d)", ev.fd);
         }
     }
     
@@ -217,8 +217,8 @@ connectA(struct tcpcc *self, struct state *state) {
     return tcpc_from(self, ioA);
 
 failed:
-    return REJECT(self, state, "tcp_connect(%s:%s)", state->hostname, 
-            state->port);
+    return tcpc_reject(self, state, DBG, "tcp_connect(%s:%s)", 
+            state->hostname, state->port);
 }
 
 

@@ -36,7 +36,7 @@ errorA(struct foobarcoro *self, struct foobar *s, int no) {
 struct foobarcoro
 fooA(struct foobarcoro *self, struct foobar *s) {
     if (s->all >= 10) {
-        return REJECT(self, s, "All done");
+        return foobarcoro_reject(self, s, DBG, "All done");
     }
     s->foo++;
     s->all++;
