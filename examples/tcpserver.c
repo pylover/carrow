@@ -59,6 +59,17 @@ static struct event ev = {
 };
 
 
+/*
+                read            write
+read ok         arm(rw)
+write ok                        arm(rw)
+eof             close           close
+error           err             err
+buffer full     arm(w)          
+buffer empty                    arm(r)
+*/
+
+
 ssize_t
 writeA(struct mrb *b, int fd, size_t count) {
     int res = 0;
