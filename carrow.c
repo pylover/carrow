@@ -89,17 +89,17 @@ CNAME(evhandler) (struct CCORO *self, CSTATE *s,
 
 
 int
-CNAME(arm) (struct CCORO *c, CSTATE *s, struct event *e, int fd, 
+CNAME(wait) (struct CCORO *c, CSTATE *s, struct event *e, int fd, 
         int op) {
     e->fd = fd;
     e->op = op;
-    return carrow_arm(c, s, e, (carrow_evhandler)CNAME(evhandler));
+    return carrow_wait(c, s, e, (carrow_evhandler)CNAME(evhandler));
 }
 
 
 int
-CNAME(dearm) (int fd) {
-    return carrow_dearm(fd);
+CNAME(nowait) (int fd) {
+    return carrow_nowait(fd);
 }
 
 

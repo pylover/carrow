@@ -31,11 +31,11 @@ typedef void (*carrow_evhandler) (void *coro, void *state,
 
 
 int
-carrow_arm(void *c, void *state, struct event *e, carrow_evhandler handler);
+carrow_wait(void *c, void *state, struct event *e, carrow_evhandler handler);
 
 
 int
-carrow_dearm(int fd);
+carrow_nowait(int fd);
 
 
 int

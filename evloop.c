@@ -122,7 +122,7 @@ carrow_evloop_init() {
 
 
 int
-carrow_arm(void *c, void *state, struct event *e, carrow_evhandler handler) {
+carrow_wait(void *c, void *state, struct event *e, carrow_evhandler handler) {
     struct epoll_event ee;
     struct _evbag *bag = _evbag_new(c, state, e, handler);
     
@@ -144,7 +144,7 @@ carrow_arm(void *c, void *state, struct event *e, carrow_evhandler handler) {
 
 
 int
-carrow_dearm(int fd) {
+carrow_nowait(int fd) {
     struct _evbag *bag = _bags[fd];
     
     if (bag != NULL) {

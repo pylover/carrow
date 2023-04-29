@@ -31,7 +31,7 @@ static struct event ev;
 struct timer 
 errorA(struct timer *self, struct state *state, int no) {
     if (state->fd != -1) {
-        timer_dearm(state->fd);
+        timer_nowait(state->fd);
         close(state->fd);
     }
     return timer_stop();
@@ -51,8 +51,8 @@ hitA(struct timer *self, struct state *state) {
             return timer_reject(self, state, DBG, "read");
         }
 
-        if (timer_arm(self, state, &ev, state->fd, EVIN | EVONESHOT)) {
-            return timer_reject(self, state, DBG, "timer_arm");
+        if (timer_wait(self, state, &ev, state->fd, EVIN | EVONESHOT)) {
+            return timer_reject(self, state, DBG, "timer_wait");
         }
         return timer_stop();
     }

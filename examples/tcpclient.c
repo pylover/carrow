@@ -46,10 +46,10 @@ struct tcpc
 errorA(struct tcpc *self, struct state *state, int no) {
     struct tcpconn *conn = &(state->conn);
     
-    tcpc_dearm(STDIN_FILENO);
-    tcpc_dearm(STDOUT_FILENO);
+    tcpc_nowait(STDIN_FILENO);
+    tcpc_nowait(STDOUT_FILENO);
     if (conn->fd != -1) {
-        tcpc_dearm(conn->fd);
+        tcpc_nowait(conn->fd);
     }
     
     if (conn->fd > 2) {
@@ -161,15 +161,15 @@ ioA(struct tcpc *self, struct state *state) {
     int op;
 
     /* stdin */
-    if (outavail && tcpc_arm(self, state, &ev, STDIN_FILENO, 
+    if (outavail && tcpc_wait(self, state, &ev, STDIN_FILENO, 
                 EVIN | EVONESHOT | EVET)) {
-        return tcpc_reject(self, state, DBG, "arm(%d)", ev.fd);
+        return tcpc_reject(self, state, DBG, "wait(%d)", ev.fd);
     }
 
     /* stdout */
-    if (inused && tcpc_arm(self, state, &ev, STDOUT_FILENO, 
+    if (inused && tcpc_wait(self, state, &ev, STDOUT_FILENO, 
                 EVOUT | EVONESHOT | EVET)) {
-        return tcpc_reject(self, state, DBG, "arm(%d)", ev.fd);
+        return tcpc_reject(self, state, DBG, "wait(%d)", ev.fd);
     }
 
     /* tcp socket */
@@ -183,8 +183,8 @@ ioA(struct tcpc *self, struct state *state) {
             op |= EVOUT;
         }
 
-        if (tcpc_arm(self, state, &ev, conn->fd, op)) {
-            return tcpc_reject(self, state, DBG, "arm(%d)", ev.fd);
+        if (tcpc_wait(self, state, &ev, conn->fd, op)) {
+            return tcpc_reject(self, state, DBG, "wait(%d)", ev.fd);
         }
     }
     
@@ -206,7 +206,7 @@ connectA(struct tcpc *self, struct state *state) {
 
     if (errno == EINPROGRESS) {
         errno = 0;
-        if (tcpc_arm(self, state, &ev, conn->fd, EVOUT | EVONESHOT)) {
+        if (tcpc_wait(self, state, &ev, conn->fd, EVOUT | EVONESHOT)) {
             goto failed;
         }
 

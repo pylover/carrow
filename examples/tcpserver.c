@@ -61,12 +61,12 @@ static struct event ev = {
 
 /*
                 read            write
-read ok         arm(rw)
-write ok                        arm(rw)
+read ok         wait(rw)
+write ok                        wait(rw)
 eof             close           close
 error           err             err
-buffer full     arm(w)          
-buffer empty                    arm(r)
+buffer full     wait(w)          
+buffer empty                    wait(r)
 */
 
 
@@ -134,7 +134,7 @@ struct tcpsc
 connerrorA(struct tcpsc *self, struct connstate *state, int no) {
     struct tcpconn *conn = &(state->conn);
     if (conn->fd != -1) {
-        tcpsc_dearm(conn->fd);
+        tcpsc_nowait(conn->fd);
         close(conn->fd);
     }
     if (mrb_destroy(state->buff)) {
@@ -170,7 +170,7 @@ echoA(struct tcpsc *self, struct connstate *state) {
     used -= bytes;
     avail += bytes;
 
-    /* reset errno and rearm events*/
+    /* reset errno and rewait events*/
     errno = 0;
     int op;
 
@@ -184,8 +184,8 @@ echoA(struct tcpsc *self, struct connstate *state) {
         op |= EVOUT;
     }
 
-    if (tcpsc_arm(self, state, &ev, conn->fd, op)) {
-        return tcpsc_reject(self, state, DBG, "arm(%d)", ev.fd);
+    if (tcpsc_wait(self, state, &ev, conn->fd, op)) {
+        return tcpsc_reject(self, state, DBG, "wait(%d)", ev.fd);
     }
 
     return tcpsc_stop();
@@ -194,7 +194,7 @@ echoA(struct tcpsc *self, struct connstate *state) {
 
 struct tcps 
 errorA(struct tcps *self, struct state *state, int no) {
-    tcps_dearm(state->listenfd);
+    tcps_nowait(state->listenfd);
     close(state->listenfd);
     return tcps_stop();
 }
@@ -210,8 +210,8 @@ acceptA(struct tcps *self, struct state *state) {
     if (fd == -1) {
         if (EVMUSTWAIT()) {
             errno = 0;
-            if (tcps_arm(self, state, &ev, state->listenfd, EVIN | EVET)) {
-                return tcps_reject(self, state, DBG, "tcpsc_arm");
+            if (tcps_wait(self, state, &ev, state->listenfd, EVIN | EVET)) {
+                return tcps_reject(self, state, DBG, "tcpsc_wait");
             }
             return tcps_stop();
         }
@@ -227,9 +227,9 @@ acceptA(struct tcps *self, struct state *state) {
     c->conn.remoteaddr = addr;
     c->buff = mrb_create(BUFFSIZE);
     static struct tcpsc echo = {echoA, connerrorA};
-    if (tcpsc_arm(&echo, c, &ev, c->conn.fd, EVIN | EVOUT | EVONESHOT)) {
+    if (tcpsc_wait(&echo, c, &ev, c->conn.fd, EVIN | EVOUT | EVONESHOT)) {
         free(c);
-        return tcps_reject(self, state, DBG, "tcpsc_arm");
+        return tcps_reject(self, state, DBG, "tcpsc_wait");
     }
 }
 
