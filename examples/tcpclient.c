@@ -195,11 +195,6 @@ ioA(struct tcpc *self, struct state *state) {
 struct tcpc 
 connectA(struct tcpc *self, struct state *state) {
     struct tcpconn *conn = &(state->conn);
-    // static struct event ev = {
-    //     .fd = -1,
-    //     .op = EVIN,
-    // };
-
     if (tcp_connect(conn, state->hostname, state->port)) {
         goto failed;
     }
