@@ -25,7 +25,6 @@ struct state {
 #define CSTATE   state
 #define CCORO    tcps
 #define CNAME(n) tcps_ ## n
-#include "carrow.h"
 #include "carrow.c"
 
 
@@ -33,7 +32,6 @@ struct state {
 struct connstate {
     struct tcpconn conn;
     mrb_t buff;
-    struct event ev;
 };
 
 
@@ -45,7 +43,6 @@ struct connstate {
 #define CSTATE   connstate
 #define CCORO    tcpsc
 #define CNAME(n) tcpsc_ ## n
-#include "carrow.h"
 #include "carrow.c"
 
 
@@ -219,8 +216,7 @@ acceptA(struct tcps *self, struct state *state) {
     c->conn.remoteaddr = addr;
     c->buff = mrb_create(BUFFSIZE);
     static struct tcpsc echo = {echoA, connerrorA};
-    if (tcpsc_arm(&echo, c, &(c->ev), c->conn.fd, 
-                EVIN | EVOUT | EVONESHOT)) {
+    if (tcpsc_arm(&echo, c, &ev, c->conn.fd, EVIN | EVOUT | EVONESHOT)) {
         free(c);
         return tcps_reject(self, state, DBG, "tcpsc_arm");
     }
