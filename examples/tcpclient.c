@@ -143,7 +143,7 @@ ioA(struct tcpc *self, struct state *state) {
     /* tcp write */
     bytes = writeA(out, conn->fd, outused);
     if (bytes == -1) {
-        return tcpc_reject(self, state, DBG, "writeead(%d)", ev.fd);
+        return tcpc_reject(self, state, DBG, "write(%d)", ev.fd);
     }
     outused -= bytes;
     outavail += bytes;

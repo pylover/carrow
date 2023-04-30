@@ -122,9 +122,9 @@ carrow_evloop_init() {
 
 
 int
-carrow_wait(void *c, void *state, struct event *e, carrow_evhandler handler) {
+carrow_wait(void *coro, void *state, struct event *e, carrow_evhandler handler) {
     struct epoll_event ee;
-    struct _evbag *bag = _evbag_new(c, state, e, handler);
+    struct _evbag *bag = _evbag_new(coro, state, e, handler);
     
     int fd = e->fd;
     ee.events = e->op;
