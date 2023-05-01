@@ -82,12 +82,15 @@ writeA(struct mrb *b, int fd, size_t count) {
     while (count) {
         bytes = mrb_writeout(b, fd, count);
         if (bytes <= 0) {
-            break;
+            goto failed;
         }
         res += bytes;
         count -= bytes;
     }
-   
+
+    return res;
+
+failed: 
     if (bytes == 0) {
         return -1;
     }
@@ -103,7 +106,7 @@ writeA(struct mrb *b, int fd, size_t count) {
 ssize_t
 readA(struct mrb *b, int fd, size_t count) {
     int res = 0;
-    int bytes;
+    int bytes = 0;
 
     if (ev.fd != fd || !(ev.op & EVIN)) {
         return 0;
@@ -112,12 +115,15 @@ readA(struct mrb *b, int fd, size_t count) {
     while (count) {
         bytes = mrb_readin(b, fd, count);
         if (bytes <= 0) {
-            break;
+            goto failed;
         }
         res += bytes;
         count -= bytes;
     }
     
+    return res;
+
+failed:
     if (bytes == 0) {
         return -1;
     }
