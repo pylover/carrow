@@ -17,6 +17,7 @@ include_directories(
 add_library(addr OBJECT addr.c addr.h)
 add_library(evloop OBJECT evloop.c evloop.h)
 add_library(tcp OBJECT tcp.c tcp.h)
+add_library(unix OBJECT unix.c unix.h)
 add_library(tty OBJECT tty.c tty.h)
 
 

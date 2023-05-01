@@ -156,7 +156,7 @@ ioA(struct tcpc *self, struct state *state) {
     inavail -= bytes;
     inused += bytes;
 
-    /* reset errno and rearm events*/
+    /* reset errno and rearm events */
     errno = 0;
     int op;
 
@@ -216,13 +216,15 @@ failed:
 }
 
 
-void sighandler(int s) {
+static void 
+sighandler(int s) {
     PRINTE(CR);
     status = EXIT_SUCCESS;
 }
 
 
-void catch_signal() {
+static void 
+catch_signal() {
     struct sigaction new_action = {sighandler, 0, 0, 0, 0};
     if (sigaction(SIGINT, &new_action, &old_action) != 0) {
         FATAL("sigaction");

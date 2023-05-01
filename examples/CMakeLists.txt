@@ -54,3 +54,20 @@ add_custom_target(profile_timer
     ${VALGRIND_FLAGS}
     $<TARGET_FILE:timer>
 )
+
+
+add_executable(unixserver
+    $<TARGET_OBJECTS:evloop>
+    $<TARGET_OBJECTS:unix>
+    $<TARGET_OBJECTS:addr>
+    $<TARGET_OBJECTS:tty>
+    unixserver.c
+)
+target_include_directories(unixserver PUBLIC "${CMAKE_SOURCE_DIR}")
+target_link_libraries(unixserver PUBLIC clog mrb)
+add_custom_target(run_unixserver $<TARGET_FILE:unixserver>)
+add_custom_target(profile_unixserver
+    COMMAND "valgrind" 
+    ${VALGRIND_FLAGS}
+    $<TARGET_FILE:unixserver>
+)
