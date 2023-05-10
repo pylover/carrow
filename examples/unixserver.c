@@ -87,11 +87,11 @@ main() {
         .listenfd = -1,
     };
     
-    carrow_evloop_init();
+    ev_init();
     // if (unixs_runloop(listenA, errorA, &state, &status)) {
     //     ret = EXIT_FAILURE;
     // }
 
-    carrow_evloop_deinit();
+    ev_deinit();
     return ret;
 }

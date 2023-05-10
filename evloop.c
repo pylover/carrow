@@ -31,13 +31,13 @@ struct _evbag {
     struct event *event;
     struct _coro coro;
     void *state;
-    carrow_evhandler handler;
+    ev_handler handler;
 };
 
 
 static struct _evbag *
 _evbag_new(struct _coro *self, void *state, struct event *e, 
-        carrow_evhandler handler) {
+        ev_handler handler) {
     int fd = e->fd;
     
     struct _evbag *bag = _bags[fd];
@@ -92,7 +92,7 @@ _dispose_all() {
 
 
 int
-carrow_evloop_init() {
+ev_init() {
     if (_epollfd != -1 ) {
         ERROR("Carrow event loop already initialized.");
         return -1;
@@ -122,7 +122,7 @@ carrow_evloop_init() {
 
 
 int
-carrow_wait(void *coro, void *state, struct event *e, carrow_evhandler handler) {
+ev_wait(void *coro, void *state, struct event *e, ev_handler handler) {
     struct epoll_event ee;
     struct _evbag *bag = _evbag_new(coro, state, e, handler);
     
@@ -144,7 +144,7 @@ carrow_wait(void *coro, void *state, struct event *e, carrow_evhandler handler) 
 
 
 int
-carrow_nowait(int fd) {
+ev_nowait(int fd) {
     struct _evbag *bag = _bags[fd];
     
     if (bag != NULL) {
@@ -157,7 +157,7 @@ carrow_nowait(int fd) {
 
 
 int
-carrow_evloop(volatile int *status) {
+ev_loop(volatile int *status) {
     int i;
     int fd;
     int nfds;
@@ -217,7 +217,7 @@ terminate:
 
 
 void
-carrow_evloop_deinit() {
+ev_deinit() {
     int i;
     struct _evbag *bag;
 

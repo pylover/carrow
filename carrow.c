@@ -67,7 +67,7 @@ CNAME(reject) (struct CCORO *self, CSTATE *s, int no,
 
 static void
 CNAME(evhandler) (struct CCORO *self, CSTATE *s, 
-        enum carrow_evstatus status) {
+        enum ev_status status) {
     struct CCORO c = *self;
     int eno;
    
@@ -92,13 +92,13 @@ int
 CNAME(wait) (struct CCORO *c, CSTATE *s, struct event *e, int fd, int op) {
     e->fd = fd;
     e->op = op;
-    return carrow_wait(c, s, e, (carrow_evhandler)CNAME(evhandler));
+    return ev_wait(c, s, e, (ev_handler)CNAME(evhandler));
 }
 
 
 int
 CNAME(nowait) (int fd) {
-    return carrow_nowait(fd);
+    return ev_nowait(fd);
 }
 
 
@@ -121,14 +121,8 @@ CNAME(run) (CNAME(resolver) f, CNAME(rejector) r, CSTATE *state) {
 
 
 int
-CNAME(loop) (volatile int *status) {
-    return carrow_evloop(status);
-}
-
-
-int
 CNAME(runloop) (CNAME(resolver) f, CNAME(rejector) r, CSTATE *state,
         volatile int *status) {
     CNAME(run)(f, r, state);
-    return CNAME(loop)(status);
+    return ev_loop(status);
 }

@@ -108,11 +108,11 @@ main() {
         .fd = -1,
     };
     
-    carrow_evloop_init();
+    ev_init();
     if (timer_runloop(timerA, errorA, &state, &status)) {
         ret = EXIT_FAILURE;
     }
     
-    carrow_evloop_deinit();
+    ev_deinit();
     return ret;
 }

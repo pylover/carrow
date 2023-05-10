@@ -13,7 +13,7 @@
 #define EVONESHOT EPOLLONESHOT
 
 
-enum carrow_evstatus {
+enum ev_status {
     EE_OK,
     EE_ERR,
     EE_TERM,
@@ -26,28 +26,27 @@ struct event {
 };
 
 
-typedef void (*carrow_evhandler) (void *coro, void *state, 
-        enum carrow_evstatus);
+typedef void (*ev_handler) (void *coro, void *state, enum ev_status);
 
 
 int
-carrow_wait(void *c, void *state, struct event *e, carrow_evhandler handler);
+ev_wait(void *c, void *state, struct event *e, ev_handler handler);
 
 
 int
-carrow_nowait(int fd);
+ev_nowait(int fd);
 
 
 int
-carrow_evloop_init();
+ev_init();
 
 
 void
-carrow_evloop_deinit();
+ev_deinit();
 
 
 int
-carrow_evloop(volatile int *status);
+ev_loop(volatile int *status);
 
 
 #endif
