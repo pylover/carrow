@@ -217,7 +217,7 @@ acceptA(struct tcps *self, struct state *state) {
         if (EVMUSTWAIT()) {
             errno = 0;
             if (tcps_wait(self, state, &ev, state->listenfd, EVIN | EVET)) {
-                return tcps_reject(self, state, DBG, "tcpsc_wait");
+                return tcps_reject(self, state, DBG, "tcps_wait");
             }
             return tcps_stop();
         }

@@ -28,6 +28,11 @@ unix_listen(const char *sockfile) {
     /* Allow reuse the address */
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 
+    if (unlink(sockfile)) {
+        ERROR("Cannot unlink: %s", sockfile);
+        return -1;
+    }
+
     /* Bind to unix port */
     res = bind(fd, &addr, sizeof(addr)); 
     if (res) {

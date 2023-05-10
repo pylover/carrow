@@ -58,6 +58,134 @@ static struct event ev = {
 };
 
 
+ssize_t
+writeA(struct mrb *b, int fd, size_t count) {
+    int res = 0;
+    int bytes;
+
+    if (ev.fd != fd || !(ev.op & EVOUT)) {
+        return 0;
+    }
+
+    while (count) {
+        bytes = mrb_writeout(b, fd, count);
+        if (bytes <= 0) {
+            goto failed;
+        }
+        res += bytes;
+        count -= bytes;
+    }
+
+    return res;
+
+failed: 
+    if (bytes == 0) {
+        return -1;
+    }
+
+    if ((bytes == -1) && (!EVMUSTWAIT())) {
+        return -1;
+    }
+
+    return res;
+}
+
+
+ssize_t
+readA(struct mrb *b, int fd, size_t count) {
+    int res = 0;
+    int bytes = 0;
+
+    if (ev.fd != fd || !(ev.op & EVIN)) {
+        return 0;
+    }
+
+    while (count) {
+        bytes = mrb_readin(b, fd, count);
+        if (bytes <= 0) {
+            goto failed;
+        }
+        res += bytes;
+        count -= bytes;
+    }
+    
+    return res;
+
+failed:
+    if (bytes == 0) {
+        return -1;
+    }
+
+    if ((bytes == -1) && (!EVMUSTWAIT())) {
+        return -1;
+    }
+
+    return res;
+}
+
+
+struct unixsc 
+connerrorA(struct unixsc *self, struct connstate *state, int no) {
+    struct unixconn *conn = &(state->conn);
+    if (conn->fd != -1) {
+        unixsc_nowait(conn->fd);
+        close(conn->fd);
+    }
+    if (mrb_destroy(state->buff)) {
+        ERROR("Cannot dispose buffers.");
+    }
+
+    free(state);
+    return unixsc_stop();
+}
+
+
+struct unixsc 
+echoA(struct unixsc *self, struct connstate *state) {
+    ssize_t bytes;
+    struct mrb *buff = state->buff;
+    struct unixconn *conn = &(state->conn);
+    int avail = mrb_available(buff);
+    int used = mrb_used(buff);
+
+    /* unix read */
+    bytes = readA(buff, conn->fd, avail);
+    if (bytes == -1) {
+        return unixsc_reject(self, state, DBG, "read(%d)", conn->fd);
+    }
+    avail -= bytes;
+    used += bytes;
+
+    /* unix write */
+    bytes = writeA(buff, conn->fd, used);
+    if (bytes == -1) {
+        return unixsc_reject(self, state, DBG, "writeead(%d)", conn->fd);
+    }
+    used -= bytes;
+    avail += bytes;
+
+    /* reset errno and rewait events*/
+    errno = 0;
+    int op;
+
+    /* unix socket */
+    op = EVONESHOT | EVET;
+    if (avail) {
+        op |= EVIN;
+    }
+
+    if (used) {
+        op |= EVOUT;
+    }
+
+    if (unixsc_wait(self, state, &ev, conn->fd, op)) {
+        return unixsc_reject(self, state, DBG, "wait(%d)", ev.fd);
+    }
+
+    return unixsc_stop();
+}
+
+
 struct unixs 
 errorA(struct unixs *self, struct state *state, int no) {
     unixs_nowait(state->listenfd);
@@ -68,7 +196,34 @@ errorA(struct unixs *self, struct state *state, int no) {
 
 struct unixs
 acceptA(struct unixs *self, struct state *state) {
-    return unixs_stop();
+    int fd;
+    socklen_t addrlen = sizeof(struct sockaddr);
+    struct sockaddr addr;
+
+    fd = accept4(state->listenfd, &addr, &addrlen, SOCK_NONBLOCK);
+    if (fd == -1) {
+        if (EVMUSTWAIT()) {
+            errno = 0;
+            if (unixs_wait(self, state, &ev, state->listenfd, EVIN | EVET)) {
+                return unixs_reject(self, state, DBG, "unixs_wait");
+            }
+            return unixs_stop();
+        }
+        return unixs_reject(self, state, DBG, "accept4");
+    }
+
+    struct connstate *c = malloc(sizeof(struct connstate));
+    if (c == NULL) {
+        return unixs_reject(self, state, DBG, "Out of memory");
+    }
+
+    c->conn.fd = fd;
+    c->buff = mrb_create(BUFFSIZE);
+    static struct unixsc echo = {echoA, connerrorA};
+    if (unixsc_wait(&echo, c, &ev, c->conn.fd, EVIN | EVOUT | EVONESHOT)) {
+        free(c);
+        return unixs_reject(self, state, DBG, "unixsc_wait");
+    }
 }
 
 
