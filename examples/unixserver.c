@@ -58,6 +58,37 @@ static struct event ev = {
 };
 
 
+struct unixs 
+errorA(struct unixs *self, struct state *state, int no) {
+    unixs_nowait(state->listenfd);
+    close(state->listenfd);
+    return unixs_stop();
+}
+
+
+struct unixs
+acceptA(struct unixs *self, struct state *state) {
+    return unixs_stop();
+}
+
+
+struct unixs 
+listenA(struct unixs *self, struct state *state) {
+    int fd;
+
+    fd = unix_listen(state->sockfile);
+    if (fd < 0) {
+        goto failed;
+    }
+    
+    state->listenfd = fd;
+    return unixs_from(self, acceptA);
+
+failed:
+    return unixs_reject(self, state, DBG, "unix_listen(%s)", state->sockfile);
+}
+
+
 static void 
 sighandler(int s) {
     PRINTE(CR);
@@ -88,9 +119,9 @@ main() {
     };
     
     ev_init();
-    // if (unixs_runloop(listenA, errorA, &state, &status)) {
-    //     ret = EXIT_FAILURE;
-    // }
+    if (unixs_runloop(listenA, errorA, &state, &status)) {
+        ret = EXIT_FAILURE;
+    }
 
     ev_deinit();
     return ret;
