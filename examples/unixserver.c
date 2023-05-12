@@ -8,7 +8,7 @@
 #include <signal.h>
 
 
-/* TCP server carrow types and function */
+/* UNIX server carrow types and function */
 struct state {
     int listenfd;
 
@@ -27,7 +27,7 @@ struct state {
 #include "carrow.c"
 
 
-/* TCP connection carrow types and function */
+/* UNIX connection carrow types and function */
 struct connstate {
     struct unixconn conn;
     mrb_t buff;
