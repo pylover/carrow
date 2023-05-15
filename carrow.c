@@ -1,5 +1,5 @@
 #include "carrow.h"
-#include "evloop.h"
+#include "carrow_ev.h"
 
 #include <clog.h>
 
@@ -67,7 +67,7 @@ CNAME(reject) (struct CCORO *self, CSTATE *s, int no,
 
 static void
 CNAME(evhandler) (struct CCORO *self, CSTATE *s, 
-        enum ev_status status) {
+        enum carrow_evstatus status) {
     struct CCORO c = *self;
     int eno;
    
@@ -89,16 +89,17 @@ CNAME(evhandler) (struct CCORO *self, CSTATE *s,
 
 
 int
-CNAME(wait) (struct CCORO *c, CSTATE *s, struct event *e, int fd, int op) {
+CNAME(wait) (struct CCORO *c, CSTATE *s, struct carrow_event *e, int fd, 
+        int op) {
     e->fd = fd;
     e->op = op;
-    return ev_wait(c, s, e, (ev_handler)CNAME(evhandler));
+    return carrow_wait(c, s, e, (carrow_evhandler)CNAME(evhandler));
 }
 
 
 int
 CNAME(nowait) (int fd) {
-    return ev_nowait(fd);
+    return carrow_nowait(fd);
 }
 
 
@@ -124,5 +125,5 @@ int
 CNAME(runloop) (CNAME(resolver) f, CNAME(rejector) r, CSTATE *state,
         volatile int *status) {
     CNAME(run)(f, r, state);
-    return ev_loop(status);
+    return carrow_evloop(status);
 }

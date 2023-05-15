@@ -263,13 +263,13 @@ main() {
         return EXIT_FAILURE;
     }
 
-    ev_init();
+    carrowev_init();
     
     if (tcpc_runloop(connectA, errorA, &state, &status)) {
         ret = EXIT_FAILURE;
     }
 
-    ev_deinit();
+    carrowev_deinit();
     if (mrb_destroy(state.inbuff) || mrb_destroy(state.outbuff)) {
         ERROR("Cannot dispose buffers.");
         ret = EXIT_FAILURE;

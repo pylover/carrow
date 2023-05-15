@@ -1,4 +1,10 @@
 
+add_library(addr OBJECT addr.c addr.h)
+add_library(tcp OBJECT tcp.c tcp.h)
+add_library(unix OBJECT unix.c unix.h)
+add_library(tty OBJECT tty.c tty.h)
+
+
 set(VALGRIND_FLAGS
     -s
     --tool=memcheck 
@@ -9,7 +15,7 @@ set(VALGRIND_FLAGS
 )
 
 add_executable(tcpclient
-    $<TARGET_OBJECTS:evloop>
+    $<TARGET_OBJECTS:carrow>
     $<TARGET_OBJECTS:tcp>
     $<TARGET_OBJECTS:addr>
     $<TARGET_OBJECTS:tty>
@@ -26,7 +32,7 @@ add_custom_target(profile_tcpclient
 
 
 add_executable(tcpserver
-    $<TARGET_OBJECTS:evloop>
+    $<TARGET_OBJECTS:carrow>
     $<TARGET_OBJECTS:tcp>
     $<TARGET_OBJECTS:addr>
     $<TARGET_OBJECTS:tty>
@@ -43,7 +49,7 @@ add_custom_target(profile_tcpserver
 
 
 add_executable(timer
-    $<TARGET_OBJECTS:evloop>
+    $<TARGET_OBJECTS:carrow>
     timer.c
 )
 target_include_directories(timer PUBLIC "${CMAKE_SOURCE_DIR}")
@@ -57,7 +63,7 @@ add_custom_target(profile_timer
 
 
 add_executable(unixserver
-    $<TARGET_OBJECTS:evloop>
+    $<TARGET_OBJECTS:carrow>
     $<TARGET_OBJECTS:unix>
     $<TARGET_OBJECTS:addr>
     $<TARGET_OBJECTS:tty>

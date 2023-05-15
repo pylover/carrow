@@ -14,15 +14,11 @@ include_directories(
 )
 
 
-add_library(addr OBJECT addr.c addr.h)
-add_library(evloop OBJECT evloop.c evloop.h)
-add_library(tcp OBJECT tcp.c tcp.h)
-add_library(unix OBJECT unix.c unix.h)
-add_library(unixs OBJECT unixs.c unixs.h)
-add_library(tty OBJECT tty.c tty.h)
+add_library(carrow OBJECT carrow_ev.c carrow_ev.h)
 
 
 # Install
+install(TARGETS carrow DESTINATION "lib")
 install(FILES carrow.h DESTINATION "include")
 install(FILES carrow.c DESTINATION "include")
 
@@ -49,7 +45,7 @@ add_custom_target(profile
 
 # Test carrow
 add_executable(test_carrow 
-    $<TARGET_OBJECTS:evloop>
+    $<TARGET_OBJECTS:carrow>
     test_carrow.c)
 target_include_directories(test_carrow PUBLIC "${PROJECT_BINARY_DIR}")
 target_link_libraries(test_carrow PUBLIC clog)
