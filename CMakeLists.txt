@@ -33,6 +33,7 @@ include(CPack)
 
 
 # Testing
+if (NOT DEFINED ENV{SKIP_TESTS})
 include(CTest)
 list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
@@ -55,7 +56,9 @@ add_custom_target(profile_test_carrow
     ${VALGRIND_FLAGS}
     $<TARGET_FILE:test_carrow>
 )
-
+endif()
 
 # Examples
+if (NOT DEFINED ENV{SKIP_EXAMPLES})
 add_subdirectory(examples)
+endif()
