@@ -36,7 +36,7 @@ struct state {
 #define WORKING 99999999
 volatile int status = WORKING;
 static struct sigaction old_action;
-static struct event ev = {
+static struct carrow_event ev = {
     .fd = STDIN_FILENO,
     .op = EVIN,
 };
@@ -263,13 +263,13 @@ main() {
         return EXIT_FAILURE;
     }
 
-    carrowev_init();
+    carrow_init();
     
     if (tcpc_runloop(connectA, errorA, &state, &status)) {
         ret = EXIT_FAILURE;
     }
 
-    carrowev_deinit();
+    carrow_deinit();
     if (mrb_destroy(state.inbuff) || mrb_destroy(state.outbuff)) {
         ERROR("Cannot dispose buffers.");
         ret = EXIT_FAILURE;

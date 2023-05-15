@@ -25,7 +25,7 @@ struct state {
 #define WORKING 99999999
 volatile int status = WORKING;
 static struct sigaction old_action;
-static struct event ev;
+static struct carrow_event ev;
 
 
 struct timer 
@@ -108,11 +108,11 @@ main() {
         .fd = -1,
     };
     
-    ev_init();
+    carrow_init();
     if (timer_runloop(timerA, errorA, &state, &status)) {
         ret = EXIT_FAILURE;
     }
     
-    ev_deinit();
+    carrow_deinit();
     return ret;
 }
