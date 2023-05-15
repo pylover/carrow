@@ -14,7 +14,7 @@ include_directories(
 )
 
 
-add_library(carrow OBJECT carrow_ev.c carrow_ev.h)
+add_library(carrow STATIC carrow_ev.c carrow_ev.h)
 
 
 # Install
