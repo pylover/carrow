@@ -19,6 +19,7 @@ add_library(carrow STATIC carrow_ev.c carrow_ev.h)
 
 # Install
 install(TARGETS carrow DESTINATION "lib")
+install(FILES carrow_ev.h DESTINATION "include")
 install(FILES carrow.h DESTINATION "include")
 install(FILES carrow.c DESTINATION "include")
 
