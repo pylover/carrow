@@ -39,7 +39,7 @@ Block and run event loop.
 #### Generic Functions
 
 `foo.h`
-```C
+_from```C
 #ifndef FOO_H
 #define FOO_H
 
@@ -67,11 +67,11 @@ typedef struct foo {
 #include "carrow_generic.c"
 ```
 
-##### foo_coro_new(resolver, rejector) => foo_coro
+##### foo_coro_create(resolver, rejector) => foo_coro
 Creates new coroutine
 
-##### foo_coro_new_run(resolver, rejector, foo*) => void
-Syntactic sugar for run(new(...), state).
+##### foo_coro_create_and_run(resolver, rejector, foo*) => void
+Syntactic sugar for foo_coro_run(foo_coro_create(...), state).
 
 ##### foo_coro_from(foo_coro*, resolver) => foo_coro
 Creates new coroutine from another by preserving the rejector.
@@ -79,10 +79,10 @@ Creates new coroutine from another by preserving the rejector.
 ##### foo_coro_stop() => foo_coro
 A special coroutine used to stop the arrow thread execution.
 
-##### foo_coro_evloop_add(foo_coro*, foo*, event*, fd, op) => int
+##### foo_coro_evloop_register(foo_coro*, foo*, event*, fd, op) => int
 Register pair of file descriptor and coro for one or more IO events.
 
-##### foo_coro_evloop_del(fd) => int
+##### foo_coro_evloop_unregister(fd) => int
 Unregister filedescriptor from event loop.
 
 ##### foo_coro_run(foo_coro*, foo*) => void
@@ -90,5 +90,3 @@ Executes a coroutine.
 
 ##### foo_coro_reject(foo_coro*, foo*, errno, DBG, format*, ...) => foo_coro
 It shouled be called by user to raise exception.
-
-

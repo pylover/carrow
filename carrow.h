@@ -5,6 +5,17 @@
 #include <sys/epoll.h>
 
 
+/* Generic stuff */
+#define CARROW_NAME_PASTER(x, y) x ## _ ## y
+#define CARROW_NAME_EVALUATOR(x, y)  CARROW_NAME_PASTER(x, y)
+#define CARROW_NAME(n) CARROW_NAME_EVALUATOR(CARROW_ENTITY, n)
+
+
+#define __FILENAME__ \
+    (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#define __DBG__ errno, __FILENAME__, __LINE__, __FUNCTION__
+
+
 #define EVMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK) \
         || (errno == EINPROGRESS))
 #define EVIN      EPOLLIN
@@ -44,12 +55,12 @@ carrow_deinit();
 
 
 int
-carrow_evloop_add(void *c, void *state, struct carrow_event *e, 
+carrow_evloop_register(void *c, void *state, struct carrow_event *e, 
         carrow_event_handler handler);
 
 
 int
-carrow_evloop_del(int fd);
+carrow_evloop_unregister(int fd);
 
 
 int

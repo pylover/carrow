@@ -31,13 +31,13 @@ struct _evbag {
     struct carrow_event *event;
     struct _coro coro;
     void *state;
-    carrow_evhandler handler;
+    carrow_event_handler handler;
 };
 
 
 static struct _evbag *
 _evbag_new(struct _coro *self, void *state, struct carrow_event *e, 
-        carrow_evhandler handler) {
+        carrow_event_handler handler) {
     int fd = e->fd;
     
     struct _evbag *bag = _bags[fd];
@@ -122,8 +122,8 @@ carrow_init() {
 
 
 int
-carrow_evloop_add(void *coro, void *state, struct carrow_event *e, 
-        carrow_evhandler handler) {
+carrow_evloop_register(void *coro, void *state, struct carrow_event *e, 
+        carrow_event_handler handler) {
     struct epoll_event ee;
     struct _evbag *bag = _evbag_new(coro, state, e, handler);
     
@@ -145,7 +145,7 @@ carrow_evloop_add(void *coro, void *state, struct carrow_event *e,
 
 
 int
-carrow_evloop_del(int fd) {
+carrow_evloop_unregister(int fd) {
     struct _evbag *bag = _bags[fd];
     
     if (bag != NULL) {

@@ -14,14 +14,14 @@ include_directories(
 )
 
 
-add_library(carrow STATIC carrow_ev.c carrow_ev.h)
+add_library(carrow STATIC carrow.c carrow.h)
 
 
 # Install
 install(TARGETS carrow DESTINATION "lib")
-install(FILES carrow_ev.h DESTINATION "include")
 install(FILES carrow.h DESTINATION "include")
-install(FILES carrow.c DESTINATION "include")
+install(FILES carrow_generic.h DESTINATION "include")
+install(FILES carrow_generic.c DESTINATION "include")
 
 
 # CPack
@@ -59,7 +59,7 @@ add_custom_target(profile_test_carrow
 )
 endif()
 
-# Examples
-if (NOT DEFINED ENV{SKIP_EXAMPLES})
-add_subdirectory(examples)
-endif()
+# # Examples
+# if (NOT DEFINED ENV{SKIP_EXAMPLES})
+# add_subdirectory(examples)
+# endif()

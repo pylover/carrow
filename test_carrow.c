@@ -1,64 +1,55 @@
+#include "carrow.h"
 #include <cutest.h>
 
 
-#undef CSTATE
-#undef CCORO
-#undef CNAME
-#undef CARROW_H
-
-
-struct foobar {
+typedef struct foo {
     int all;
     int foo;
     int bar;
-};
+} foo;
 
 
-#define CSTATE  struct foobar
-#define CCORO   foobarcoro
-#define CNAME(n) foobarcoro_ ## n
-#include "carrow_generic_types.h"
-#include "carrow_generic_types.c"
+#undef CARROW_ENTITY
+#define CARROW_ENTITY foo
+#include "carrow_generic.h"
+#include "carrow_generic.c"
 
 
-#define CHUNK_SIZE  256
+struct foo_coro
+barA(struct foo_coro *self, struct foo *s);
 
 
-struct foobarcoro
-barA(struct foobarcoro *self, struct foobar *s);
-
-
-struct foobarcoro
-errorA(struct foobarcoro *self, struct foobar *s, int no) {
-    return foobarcoro_stop();
+struct foo_coro
+errorA(struct foo_coro *self, struct foo *s, int no) {
+    return foo_coro_stop();
 }
 
 
-struct foobarcoro
-fooA(struct foobarcoro *self, struct foobar *s) {
+struct foo_coro
+fooA(struct foo_coro *self, struct foo *s) {
     if (s->all >= 10) {
-        return foobarcoro_reject(self, s, DBG, "All done");
+        return foo_coro_reject(self, s, __DBG__, "All done");
     }
     s->foo++;
     s->all++;
-    return foobarcoro_from(self, barA);
+    return foo_coro_create_from(self, barA);
 }
 
 
-struct foobarcoro
-barA(struct foobarcoro *self, struct foobar *s) {
+struct foo_coro
+barA(struct foo_coro *self, struct foo *s) {
     s->bar++;
     s->all++;
-    return foobarcoro_from(self, fooA);
+    return foo_coro_create_from(self, fooA);
 }
 
 
 void
 test_foo_loop() {
-    static char b[CHUNK_SIZE];
-    struct foobar state = {0, 0, 0};
+    static char b[256];
+    struct foo state = {0, 0, 0};
     
-    foobarcoro_run(fooA, errorA, &state);
+    foo_coro_create_and_run(fooA, errorA, &state);
     eqint(10, state.all);
     eqint(5, state.foo);
     eqint(5, state.bar);
