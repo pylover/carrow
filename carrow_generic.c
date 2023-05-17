@@ -6,13 +6,6 @@
 #include <errno.h>
 
 
-/* Core */
-struct CARROW_NAME(coro) {
-    CARROW_NAME(coro_resolver) resolve;
-    CARROW_NAME(coro_rejector) reject;
-};
-
-
 CARROW_NAME(coro)
 CARROW_NAME(coro_create) (CARROW_NAME(coro_resolver) f, 
         CARROW_NAME(coro_rejector) r) {

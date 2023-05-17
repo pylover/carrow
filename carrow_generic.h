@@ -18,6 +18,12 @@ typedef CARROW_NAME(coro) (*CARROW_NAME(coro_rejector))
     (CARROW_NAME(coro) *self, CARROW_ENTITY *state, int no);
 
 
+struct CARROW_NAME(coro) {
+    CARROW_NAME(coro_resolver) resolve;
+    CARROW_NAME(coro_rejector) reject;
+};
+
+
 void
 CARROW_NAME(resolve) (CARROW_NAME(coro) *self, CARROW_ENTITY *s);
 
