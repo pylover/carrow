@@ -118,6 +118,26 @@ CARROW_NAME(evloop_register) (CARROW_NAME(coro) *c, CARROW_ENTITY *s,
 
 
 int
+CARROW_NAME(evloop_modify) (CARROW_NAME(coro) *c, CARROW_ENTITY *s, 
+        struct carrow_event *e, int fd, int op) {
+    e->fd = fd;
+    e->op = op;
+    return carrow_evloop_modify(c, s, e, 
+            (carrow_event_handler)CARROW_NAME(event_handler));
+}
+
+
+int
+CARROW_NAME(evloop_modify_or_register) (CARROW_NAME(coro) *c, 
+        CARROW_ENTITY *s, struct carrow_event *e, int fd, int op) {
+    e->fd = fd;
+    e->op = op;
+    return carrow_evloop_modify_or_register(c, s, e, 
+            (carrow_event_handler)CARROW_NAME(event_handler));
+}
+
+
+int
 CARROW_NAME(evloop_unregister) (int fd) {
     return carrow_evloop_unregister(fd);
 }

@@ -131,16 +131,38 @@ carrow_evloop_register(void *coro, void *state, struct carrow_event *e,
     ee.events = e->op;
     ee.data.fd = fd;
     
-    if (epoll_ctl(_epollfd, EPOLL_CTL_MOD, fd, &ee)) {
-        if (errno == ENOENT) {
-            errno = 0;
-            return epoll_ctl(_epollfd, EPOLL_CTL_ADD, fd, &ee);
-        }
+    return epoll_ctl(_epollfd, EPOLL_CTL_ADD, fd, &ee);
+}
 
+
+int
+carrow_evloop_modify(void *coro, void *state, struct carrow_event *e, 
+        carrow_event_handler handler) {
+    struct epoll_event ee;
+    struct _evbag *bag = _evbag_new(coro, state, e, handler);
+    
+    int fd = e->fd;
+    ee.events = e->op;
+    ee.data.fd = fd;
+    
+    return epoll_ctl(_epollfd, EPOLL_CTL_MOD, fd, &ee);
+}
+
+
+int
+carrow_evloop_modify_or_register(void *coro, void *state, 
+        struct carrow_event *e, carrow_event_handler handler) {
+    
+    if (carrow_evloop_modify(coro, state, e, handler) == 0) {
+        return 0;
+    }
+
+    if (errno != ENOENT) {
         return -1;
     }
 
-    return 0;
+    errno = 0;
+    return carrow_evloop_register(coro, state, e, handler);
 }
 
 

@@ -182,7 +182,7 @@ echoA(struct tcpsc_coro *self, struct tcpsc *state) {
         op |= EVOUT;
     }
 
-    if (tcpsc_evloop_register(self, state, &ev, conn->fd, op)) {
+    if (tcpsc_evloop_modify_or_register(self, state, &ev, conn->fd, op)) {
         return tcpsc_coro_reject(self, state, __DBG__, "wait(%d)", ev.fd);
     }
 
@@ -208,8 +208,8 @@ acceptA(struct tcps_coro *self, struct tcps *state) {
     if (fd == -1) {
         if (EVMUSTWAIT()) {
             errno = 0;
-            if (tcps_evloop_register(self, state, &ev, state->listenfd, 
-                        EVIN | EVET)) {
+            if (tcps_evloop_modify_or_register(self, state, &ev, 
+                        state->listenfd, EVIN | EVET)) {
                 return tcps_coro_reject(self, state, __DBG__, "tcps_wait");
             }
             return tcps_coro_stop();
