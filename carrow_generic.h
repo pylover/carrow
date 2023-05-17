@@ -11,11 +11,11 @@
 typedef struct CARROW_NAME(coro) CARROW_NAME(coro);
 
 
-typedef CARROW_NAME(coro) (*CARROW_NAME(resolver)) 
+typedef CARROW_NAME(coro) (*CARROW_NAME(coro_resolver)) 
     (CARROW_NAME(coro) *self, CARROW_ENTITY *state);
 
 
-typedef CARROW_NAME(coro) (*CARROW_NAME(rejector)) 
+typedef CARROW_NAME(coro) (*CARROW_NAME(coro_rejector)) 
     (CARROW_NAME(coro) *self, CARROW_ENTITY *state, int no);
 
 
