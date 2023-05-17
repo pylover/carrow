@@ -25,6 +25,7 @@ struct state {
 #define CSTATE   struct state
 #define CCORO    tcps
 #define CNAME(n) tcps_ ## n
+#include "carrow.h"
 #include "carrow.c"
 
 
@@ -43,6 +44,7 @@ struct connstate {
 #define CSTATE   struct connstate
 #define CCORO    tcpsc
 #define CNAME(n) tcpsc_ ## n
+#include "carrow.h"
 #include "carrow.c"
 
 

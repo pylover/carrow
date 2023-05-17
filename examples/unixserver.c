@@ -24,6 +24,7 @@ struct state {
 #define CSTATE   struct state
 #define CCORO    unixs
 #define CNAME(n) unixs_ ## n
+#include "carrow.h"
 #include "carrow.c"
 
 
@@ -42,6 +43,7 @@ struct connstate {
 #define CSTATE   struct connstate
 #define CCORO    unixsc
 #define CNAME(n) unixsc_ ## n
+#include "carrow.h"
 #include "carrow.c"
 
 

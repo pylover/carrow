@@ -19,6 +19,7 @@ struct state {
 #define CSTATE   struct state
 #define CCORO    timer
 #define CNAME(n) timer_ ## n
+#include "carrow.h"
 #include "carrow.c"
 
 

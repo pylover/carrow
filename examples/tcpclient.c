@@ -26,6 +26,7 @@ struct state {
 #define CSTATE   struct state
 #define CCORO    tcpc
 #define CNAME(n) tcpc_ ## n
+#include "carrow.h"
 #include "carrow.c"
 
 
