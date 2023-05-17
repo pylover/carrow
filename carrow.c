@@ -1,4 +1,3 @@
-#include "carrow.h"
 #include "carrow_ev.h"
 
 #include <clog.h>
