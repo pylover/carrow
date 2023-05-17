@@ -25,14 +25,14 @@ struct carrow_event {
 #include <carrow.h>
 ```
 
-##### carrow_init() => int
+##### int carrow_init()
 Initialize carrow and event loop.
 
-##### carrow_deinit() => void
+##### void carrow_deinit()
 Deinitialize carrow and event loop.
 
 
-##### carrow_evloop(status*) => int
+##### int carrow_evloop(status*)
 Block and run event loop.
 
 
@@ -67,26 +67,26 @@ typedef struct foo {
 #include "carrow_generic.c"
 ```
 
-##### foo_coro_create(resolver, rejector) => foo_coro
+##### foo_coro foo_coro_create(resolver, rejector)
 Creates new coroutine
 
-##### foo_coro_create_and_run(resolver, rejector, foo*) => void
+##### void foo_coro_create_and_run(resolver, rejector, foo*)
 Syntactic sugar for foo_coro_run(foo_coro_create(...), state).
 
-##### foo_coro_from(foo_coro*, resolver) => foo_coro
+##### foor_coro foo_coro_from(foo_coro*, resolver)
 Creates new coroutine from another by preserving the rejector.
 
-##### foo_coro_stop() => foo_coro
+##### foo_coro foo_coro_stop()
 A special coroutine used to stop the arrow thread execution.
 
-##### foo_evloop_register(foo_coro*, foo*, event*, fd, op) => int
+##### int foo_evloop_register(foo_coro*, foo*, event*, fd, op)
 Register pair of file descriptor and coro for one or more IO events.
 
-##### foo_evloop_unregister(fd) => int
+##### int foo_evloop_unregister(fd)
 Unregister filedescriptor from event loop.
 
-##### foo_coro_run(foo_coro*, foo*) => void
+##### void foo_coro_run(foo_coro*, foo*)
 Executes a coroutine.
 
-##### foo_coro_reject(foo_coro*, foo*, errno, DBG, format*, ...) => foo_coro
+##### foo_coro foo_coro_reject(foo_coro*, foo*, errno, DBG, format*, ...)
 It shouled be called by user to raise exception.
