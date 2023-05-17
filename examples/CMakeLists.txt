@@ -31,49 +31,49 @@ add_custom_target(profile_tcpclient
 )
 
 
-add_executable(tcpserver
-    $<TARGET_OBJECTS:carrow>
-    $<TARGET_OBJECTS:tcp>
-    $<TARGET_OBJECTS:addr>
-    $<TARGET_OBJECTS:tty>
-    tcpserver.c
-)
-target_include_directories(tcpserver PUBLIC "${CMAKE_SOURCE_DIR}")
-target_link_libraries(tcpserver PUBLIC clog mrb)
-add_custom_target(run_tcpserver $<TARGET_FILE:tcpserver>)
-add_custom_target(profile_tcpserver
-    COMMAND "valgrind" 
-    ${VALGRIND_FLAGS}
-    $<TARGET_FILE:tcpserver>
-)
-
-
-add_executable(timer
-    $<TARGET_OBJECTS:carrow>
-    timer.c
-)
-target_include_directories(timer PUBLIC "${CMAKE_SOURCE_DIR}")
-target_link_libraries(timer PUBLIC clog mrb)
-add_custom_target(run_timer $<TARGET_FILE:timer>)
-add_custom_target(profile_timer
-    COMMAND "valgrind" 
-    ${VALGRIND_FLAGS}
-    $<TARGET_FILE:timer>
-)
-
-
-add_executable(unixserver
-    $<TARGET_OBJECTS:carrow>
-    $<TARGET_OBJECTS:unix>
-    $<TARGET_OBJECTS:addr>
-    $<TARGET_OBJECTS:tty>
-    unixserver.c
-)
-target_include_directories(unixserver PUBLIC "${CMAKE_SOURCE_DIR}")
-target_link_libraries(unixserver PUBLIC clog mrb)
-add_custom_target(run_unixserver $<TARGET_FILE:unixserver>)
-add_custom_target(profile_unixserver
-    COMMAND "valgrind" 
-    ${VALGRIND_FLAGS}
-    $<TARGET_FILE:unixserver>
-)
+# add_executable(tcpserver
+#     $<TARGET_OBJECTS:carrow>
+#     $<TARGET_OBJECTS:tcp>
+#     $<TARGET_OBJECTS:addr>
+#     $<TARGET_OBJECTS:tty>
+#     tcpserver.c
+# )
+# target_include_directories(tcpserver PUBLIC "${CMAKE_SOURCE_DIR}")
+# target_link_libraries(tcpserver PUBLIC clog mrb)
+# add_custom_target(run_tcpserver $<TARGET_FILE:tcpserver>)
+# add_custom_target(profile_tcpserver
+#     COMMAND "valgrind" 
+#     ${VALGRIND_FLAGS}
+#     $<TARGET_FILE:tcpserver>
+# )
+# 
+# 
+# add_executable(timer
+#     $<TARGET_OBJECTS:carrow>
+#     timer.c
+# )
+# target_include_directories(timer PUBLIC "${CMAKE_SOURCE_DIR}")
+# target_link_libraries(timer PUBLIC clog mrb)
+# add_custom_target(run_timer $<TARGET_FILE:timer>)
+# add_custom_target(profile_timer
+#     COMMAND "valgrind" 
+#     ${VALGRIND_FLAGS}
+#     $<TARGET_FILE:timer>
+# )
+# 
+# 
+# add_executable(unixserver
+#     $<TARGET_OBJECTS:carrow>
+#     $<TARGET_OBJECTS:unix>
+#     $<TARGET_OBJECTS:addr>
+#     $<TARGET_OBJECTS:tty>
+#     unixserver.c
+# )
+# target_include_directories(unixserver PUBLIC "${CMAKE_SOURCE_DIR}")
+# target_link_libraries(unixserver PUBLIC clog mrb)
+# add_custom_target(run_unixserver $<TARGET_FILE:unixserver>)
+# add_custom_target(profile_unixserver
+#     COMMAND "valgrind" 
+#     ${VALGRIND_FLAGS}
+#     $<TARGET_FILE:unixserver>
+# )

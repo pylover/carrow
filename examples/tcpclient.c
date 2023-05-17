@@ -1,5 +1,6 @@
 #include "tcp.h"
 #include "tty.h"
+#include "carrow.h"
 
 #include <mrb.h>
 
@@ -8,26 +9,20 @@
 #include <signal.h>
 
 
-struct state {
+typedef struct tcpc {
     const char *hostname;
     const char *port;
 
     struct tcpconn conn;
     mrb_t inbuff;
     mrb_t outbuff;
-};
+} tcpc;
 
 
-#undef CSTATE
-#undef CCORO
-#undef CNAME
-#undef CARROW_H
-
-#define CSTATE   struct state
-#define CCORO    tcpc
-#define CNAME(n) tcpc_ ## n
-#include "carrow.h"
-#include "carrow.c"
+#undef CARROW_ENTITY
+#define CARROW_ENTITY tcpc
+#include "carrow_generic.h"
+#include "carrow_generic.c"
 
 
 #define PAGESIZE 4096
@@ -43,14 +38,14 @@ static struct carrow_event ev = {
 };
 
 
-struct tcpc 
-errorA(struct tcpc *self, struct state *state, int no) {
+struct tcpc_coro
+errorA(struct tcpc_coro *self, struct tcpc *state, int no) {
     struct tcpconn *conn = &(state->conn);
     
-    tcpc_nowait(STDIN_FILENO);
-    tcpc_nowait(STDOUT_FILENO);
+    tcpc_evloop_unregister(STDIN_FILENO);
+    tcpc_evloop_unregister(STDOUT_FILENO);
     if (conn->fd != -1) {
-        tcpc_nowait(conn->fd);
+        tcpc_evloop_unregister(conn->fd);
     }
     
     if (conn->fd > 2) {
@@ -58,7 +53,7 @@ errorA(struct tcpc *self, struct state *state, int no) {
     }
 
     errno = 0;
-    return tcpc_stop();
+    return tcpc_coro_stop();
 }
 
 
@@ -120,8 +115,8 @@ failed:
 }
 
 
-struct tcpc 
-ioA(struct tcpc *self, struct state *state) {
+struct tcpc_coro 
+ioA(struct tcpc_coro *self, struct tcpc *state) {
     ssize_t bytes;
     struct mrb *in = state->inbuff;
     struct mrb *out = state->outbuff;
@@ -134,7 +129,7 @@ ioA(struct tcpc *self, struct state *state) {
     /* stdin read */
     bytes = readA(out, STDIN_FILENO, outavail);
     if (bytes == -1) {
-        return tcpc_reject(self, state, DBG, "read(%d)", ev.fd);
+        return tcpc_coro_reject(self, state, __DBG__, "read(%d)", ev.fd);
     }
     outavail -= bytes;
     outused += bytes;
@@ -142,7 +137,7 @@ ioA(struct tcpc *self, struct state *state) {
     /* stdout write */
     bytes = writeA(in, STDOUT_FILENO, inused);
     if (bytes == -1) {
-        return tcpc_reject(self, state, DBG, "write(%d)", ev.fd);
+        return tcpc_coro_reject(self, state, __DBG__, "write(%d)", ev.fd);
     }
     inused -= bytes;
     inavail += bytes;
@@ -150,7 +145,7 @@ ioA(struct tcpc *self, struct state *state) {
     /* tcp write */
     bytes = writeA(out, conn->fd, outused);
     if (bytes == -1) {
-        return tcpc_reject(self, state, DBG, "write(%d)", ev.fd);
+        return tcpc_coro_reject(self, state, __DBG__, "write(%d)", ev.fd);
     }
     outused -= bytes;
     outavail += bytes;
@@ -158,7 +153,7 @@ ioA(struct tcpc *self, struct state *state) {
     /* tcp read */
     bytes = readA(in, conn->fd, inavail);
     if (bytes == -1) {
-        return tcpc_reject(self, state, DBG, "read(%d)", conn->fd);
+        return tcpc_coro_reject(self, state, __DBG__, "read(%d)", conn->fd);
     }
     inavail -= bytes;
     inused += bytes;
@@ -168,15 +163,15 @@ ioA(struct tcpc *self, struct state *state) {
     int op;
 
     /* stdin */
-    if (outavail && tcpc_wait(self, state, &ev, STDIN_FILENO, 
+    if (outavail && tcpc_evloop_register(self, state, &ev, STDIN_FILENO, 
                 EVIN | EVONESHOT | EVET)) {
-        return tcpc_reject(self, state, DBG, "wait(%d)", ev.fd);
+        return tcpc_coro_reject(self, state, __DBG__, "wait(%d)", ev.fd);
     }
 
     /* stdout */
-    if (inused && tcpc_wait(self, state, &ev, STDOUT_FILENO, 
+    if (inused && tcpc_evloop_register(self, state, &ev, STDOUT_FILENO, 
                 EVOUT | EVONESHOT | EVET)) {
-        return tcpc_reject(self, state, DBG, "wait(%d)", ev.fd);
+        return tcpc_coro_reject(self, state, __DBG__, "wait(%d)", ev.fd);
     }
 
     /* tcp socket */
@@ -190,17 +185,17 @@ ioA(struct tcpc *self, struct state *state) {
             op |= EVOUT;
         }
 
-        if (tcpc_wait(self, state, &ev, conn->fd, op)) {
-            return tcpc_reject(self, state, DBG, "wait(%d)", ev.fd);
+        if (tcpc_evloop_register(self, state, &ev, conn->fd, op)) {
+            return tcpc_coro_reject(self, state, __DBG__, "wait(%d)", ev.fd);
         }
     }
     
-    return tcpc_stop();
+    return tcpc_coro_stop();
 }
 
 
-struct tcpc 
-connectA(struct tcpc *self, struct state *state) {
+struct tcpc_coro 
+connectA(struct tcpc_coro *self, struct tcpc *state) {
     struct tcpconn *conn = &(state->conn);
     if (tcp_connect(conn, state->hostname, state->port)) {
         goto failed;
@@ -208,17 +203,18 @@ connectA(struct tcpc *self, struct state *state) {
 
     if (errno == EINPROGRESS) {
         errno = 0;
-        if (tcpc_wait(self, state, &ev, conn->fd, EVOUT | EVONESHOT)) {
+        if (tcpc_evloop_register(self, state, &ev, conn->fd, 
+                    EVOUT | EVONESHOT)) {
             goto failed;
         }
 
-        return tcpc_stop();
+        return tcpc_coro_stop();
     }
 
-    return tcpc_from(self, ioA);
+    return tcpc_coro_create_from(self, ioA);
 
 failed:
-    return tcpc_reject(self, state, DBG, "tcp_connect(%s:%s)", 
+    return tcpc_coro_reject(self, state, __DBG__, "tcp_connect(%s:%s)", 
             state->hostname, state->port);
 }
 
@@ -252,7 +248,7 @@ main() {
         return EXIT_FAILURE;
     }
 
-    struct state state = {
+    struct tcpc state = {
         .hostname = "localhost",
         .port = "3030",
     };
@@ -265,8 +261,9 @@ main() {
     }
 
     carrow_init();
-    
-    if (tcpc_runloop(connectA, errorA, &state, &status)) {
+   
+    tcpc_coro_create_and_run(connectA, errorA, &state);
+    if (carrow_evloop(&status)) {
         ret = EXIT_FAILURE;
     }
 

@@ -79,10 +79,10 @@ Creates new coroutine from another by preserving the rejector.
 ##### foo_coro_stop() => foo_coro
 A special coroutine used to stop the arrow thread execution.
 
-##### foo_coro_evloop_register(foo_coro*, foo*, event*, fd, op) => int
+##### foo_evloop_register(foo_coro*, foo*, event*, fd, op) => int
 Register pair of file descriptor and coro for one or more IO events.
 
-##### foo_coro_evloop_unregister(fd) => int
+##### foo_evloop_unregister(fd) => int
 Unregister filedescriptor from event loop.
 
 ##### foo_coro_run(foo_coro*, foo*) => void

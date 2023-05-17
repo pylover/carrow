@@ -86,7 +86,7 @@ CARROW_NAME(coro_create_and_run) (CARROW_NAME(resolver) f, CARROW_NAME(rejector)
 static void
 CARROW_NAME(event_handler) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, 
         enum carrow_event_status status) {
-    CARROW_NAME(coro) c = *self;
+    CARROW_NAME(coro) c;
     int eno;
    
     if (status != CES_OK) {
@@ -96,16 +96,19 @@ CARROW_NAME(event_handler) (CARROW_NAME(coro) *self, CARROW_ENTITY *s,
         else {
             eno = EINTR;
         }
-        c.reject(self, s, eno);
+        c = CARROW_NAME(coro_reject)(self, s, __DBG__, "epoll_wait()");
         return;
     }
+    else {
+        c = *self;
+    }
     
-    CARROW_NAME(coro_run) (self, s);
+    CARROW_NAME(coro_run) (&c, s);
 }
 
 
 int
-CARROW_NAME(coro_evloop_register) (CARROW_NAME(coro) *c, CARROW_ENTITY *s, 
+CARROW_NAME(evloop_register) (CARROW_NAME(coro) *c, CARROW_ENTITY *s, 
         struct carrow_event *e, int fd, int op) {
     e->fd = fd;
     e->op = op;
@@ -115,6 +118,6 @@ CARROW_NAME(coro_evloop_register) (CARROW_NAME(coro) *c, CARROW_ENTITY *s,
 
 
 int
-CARROW_NAME(coro_evloop_unregister) (int fd) {
+CARROW_NAME(evloop_unregister) (int fd) {
     return carrow_evloop_unregister(fd);
 }
