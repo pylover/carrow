@@ -82,36 +82,36 @@ foo_coro_create_and_run(foo_coro_resolver, foo_coro_rejector, foo* foo);
 
 // Creates new coroutine from another by preserving the rejector.
 foor_coro 
-foo_coro_from(foo_coro *self, foo_coro_resolver)
+foo_coro_from(foo_coro *self, foo_coro_resolver);
 
 
 // A special coroutine used to stop the arrow thread execution.
 foo_coro 
-foo_coro_stop()
+foo_coro_stop();
 
 
 // Register/Modify pair of file descriptor and coro for one or more IO events.
 int 
-foo_evloop_register(foo_coro*, foo*, carrow_event*, int fd, int op)
+foo_evloop_register(foo_coro*, foo*, carrow_event*, int fd, int op);
 
 int 
-foo_evloop_modify(foo_coro*, foo*, carrow_event*, int fd, int op)
+foo_evloop_modify(foo_coro*, foo*, carrow_event*, int fd, int op);
 
 int 
-foo_evloop_modify_or_register(foo_coro*, foo*, carrow_event*, int fd, int op)
+foo_evloop_modify_or_register(foo_coro*, foo*, carrow_event*, int fd, int op);
 
 
 // Unregister filedescriptor from event loop.
 int 
-foo_evloop_unregister(int fd)
+foo_evloop_unregister(int fd);
 
 
 // Execute a coroutine.
 void 
-foo_coro_run(foo_coro*, foo*)
+foo_coro_run(foo_coro*, foo*);
 
 
 // It shouled be called by user to raise exception.
 foo_coro 
-foo_coro_reject(foo_coro*, foo*, int errno, DBG, const char *format, ...)
+foo_coro_reject(foo_coro*, foo*, int errno, DBG, const char *format, ...);
 ```
