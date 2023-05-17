@@ -1,5 +1,6 @@
 #include "tcp.h"
 #include "tty.h"
+#include "carrow.h"
 
 #include <mrb.h>
 
@@ -9,43 +10,31 @@
 
 
 /* TCP server carrow types and function */
-struct state {
+typedef struct tcps {
     int listenfd;
 
     const char *bindaddr;
     unsigned short bindport;
-};
+} tcps;
 
 
-#undef CSTATE
-#undef CCORO
-#undef CNAME
-#undef CARROW_H
-
-#define CSTATE   struct state
-#define CCORO    tcps
-#define CNAME(n) tcps_ ## n
-#include "carrow.h"
-#include "carrow.c"
+#undef CARROW_ENTITY
+#define CARROW_ENTITY tcps
+#include "carrow_generic.h"
+#include "carrow_generic.c"
 
 
 /* TCP connection carrow types and function */
-struct connstate {
+typedef struct tcpsc {
     struct tcpconn conn;
     mrb_t buff;
-};
+} tcpsc;
 
 
-#undef CSTATE
-#undef CCORO
-#undef CNAME
-#undef CARROW_H
-
-#define CSTATE   struct connstate
-#define CCORO    tcpsc
-#define CNAME(n) tcpsc_ ## n
-#include "carrow.h"
-#include "carrow.c"
+#undef CARROW_ENTITY
+#define CARROW_ENTITY tcpsc
+#include "carrow_generic.h"
+#include "carrow_generic.c"
 
 
 #define PAGESIZE 4096
@@ -138,11 +127,11 @@ failed:
 }
 
 
-struct tcpsc 
-connerrorA(struct tcpsc *self, struct connstate *state, int no) {
+struct tcpsc_coro
+connerrorA(struct tcpsc_coro *self, struct tcpsc *state, int no) {
     struct tcpconn *conn = &(state->conn);
     if (conn->fd != -1) {
-        tcpsc_nowait(conn->fd);
+        tcpsc_evloop_unregister(conn->fd);
         close(conn->fd);
     }
     if (mrb_destroy(state->buff)) {
@@ -150,12 +139,12 @@ connerrorA(struct tcpsc *self, struct connstate *state, int no) {
     }
 
     free(state);
-    return tcpsc_stop();
+    return tcpsc_coro_stop();
 }
 
 
-struct tcpsc 
-echoA(struct tcpsc *self, struct connstate *state) {
+struct tcpsc_coro 
+echoA(struct tcpsc_coro *self, struct tcpsc *state) {
     ssize_t bytes;
     struct mrb *buff = state->buff;
     struct tcpconn *conn = &(state->conn);
@@ -165,7 +154,7 @@ echoA(struct tcpsc *self, struct connstate *state) {
     /* tcp read */
     bytes = readA(buff, conn->fd, avail);
     if (bytes == -1) {
-        return tcpsc_reject(self, state, DBG, "read(%d)", conn->fd);
+        return tcpsc_coro_reject(self, state, __DBG__, "read(%d)", conn->fd);
     }
     avail -= bytes;
     used += bytes;
@@ -173,7 +162,8 @@ echoA(struct tcpsc *self, struct connstate *state) {
     /* tcp write */
     bytes = writeA(buff, conn->fd, used);
     if (bytes == -1) {
-        return tcpsc_reject(self, state, DBG, "writeead(%d)", conn->fd);
+        return tcpsc_coro_reject(self, state, __DBG__, "writeead(%d)", 
+                conn->fd);
     }
     used -= bytes;
     avail += bytes;
@@ -192,24 +182,24 @@ echoA(struct tcpsc *self, struct connstate *state) {
         op |= EVOUT;
     }
 
-    if (tcpsc_wait(self, state, &ev, conn->fd, op)) {
-        return tcpsc_reject(self, state, DBG, "wait(%d)", ev.fd);
+    if (tcpsc_evloop_register(self, state, &ev, conn->fd, op)) {
+        return tcpsc_coro_reject(self, state, __DBG__, "wait(%d)", ev.fd);
     }
 
-    return tcpsc_stop();
+    return tcpsc_coro_stop();
 }
 
 
-struct tcps 
-errorA(struct tcps *self, struct state *state, int no) {
-    tcps_nowait(state->listenfd);
+struct tcps_coro 
+errorA(struct tcps_coro *self, struct tcps *state, int no) {
+    tcps_evloop_unregister(state->listenfd);
     close(state->listenfd);
-    return tcps_stop();
+    return tcps_coro_stop();
 }
 
 
-struct tcps
-acceptA(struct tcps *self, struct state *state) {
+struct tcps_coro
+acceptA(struct tcps_coro *self, struct tcps *state) {
     int fd;
     socklen_t addrlen = sizeof(struct sockaddr);
     struct sockaddr addr;
@@ -218,32 +208,34 @@ acceptA(struct tcps *self, struct state *state) {
     if (fd == -1) {
         if (EVMUSTWAIT()) {
             errno = 0;
-            if (tcps_wait(self, state, &ev, state->listenfd, EVIN | EVET)) {
-                return tcps_reject(self, state, DBG, "tcps_wait");
+            if (tcps_evloop_register(self, state, &ev, state->listenfd, 
+                        EVIN | EVET)) {
+                return tcps_coro_reject(self, state, __DBG__, "tcps_wait");
             }
-            return tcps_stop();
+            return tcps_coro_stop();
         }
-        return tcps_reject(self, state, DBG, "accept4");
+        return tcps_coro_reject(self, state, __DBG__, "accept4");
     }
 
-    struct connstate *c = malloc(sizeof(struct connstate));
+    struct tcpsc *c = malloc(sizeof(struct tcpsc));
     if (c == NULL) {
-        return tcps_reject(self, state, DBG, "Out of memory");
+        return tcps_coro_reject(self, state, __DBG__, "Out of memory");
     }
 
     c->conn.fd = fd;
     c->conn.remoteaddr = addr;
     c->buff = mrb_create(BUFFSIZE);
-    static struct tcpsc echo = {echoA, connerrorA};
-    if (tcpsc_wait(&echo, c, &ev, c->conn.fd, EVIN | EVOUT | EVONESHOT)) {
+    static struct tcpsc_coro echo = {echoA, connerrorA};
+    if (tcpsc_evloop_register(&echo, c, &ev, c->conn.fd, 
+                EVIN | EVOUT | EVONESHOT)) {
         free(c);
-        return tcps_reject(self, state, DBG, "tcpsc_wait");
+        return tcps_coro_reject(self, state, __DBG__, "tcpsc_wait");
     }
 }
 
 
-struct tcps 
-listenA(struct tcps *self, struct state *state) {
+struct tcps_coro
+listenA(struct tcps_coro *self, struct tcps *state) {
     int fd;
 
     fd = tcp_listen(state->bindaddr, state->bindport);
@@ -252,10 +244,10 @@ listenA(struct tcps *self, struct state *state) {
     }
     
     state->listenfd = fd;
-    return tcps_from(self, acceptA);
+    return tcps_coro_create_from(self, acceptA);
 
 failed:
-    return tcps_reject(self, state, DBG, "tcp_listen(%s:%u)", 
+    return tcps_coro_reject(self, state, __DBG__, "tcp_listen(%s:%u)", 
             state->bindaddr, state->bindport);
 }
 
@@ -284,14 +276,15 @@ main() {
     /* Signal */
     catch_signal();
 
-    struct state state = {
+    struct tcps state = {
         .bindaddr = "0.0.0.0",
         .bindport = 3030,
         .listenfd = -1,
     };
     
     carrow_init();
-    if (tcps_runloop(listenA, errorA, &state, &status)) {
+    tcps_coro_create_and_run(listenA, errorA, &state);
+    if (carrow_evloop(&status)) {
         ret = EXIT_FAILURE;
     }
 
