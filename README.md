@@ -23,17 +23,17 @@ struct carrow_event {
 
 ```C
 #include <carrow.h>
+
+
+// Initialize carrow and event loop.
+int carrow_init()
+
+// Deinitialize carrow and event loop.
+void carrow_deinit()
+
+// Block and run event loop.
+int carrow_evloop(status*)
 ```
-
-##### int carrow_init()
-Initialize carrow and event loop.
-
-##### void carrow_deinit()
-Deinitialize carrow and event loop.
-
-
-##### int carrow_evloop(status*)
-Block and run event loop.
 
 
 #### Generic Functions
@@ -65,28 +65,31 @@ typedef struct foo {
 #define CARROW_ENTITY foo
 #include "foo.h"
 #include "carrow_generic.c"
+
+
+// Creates new coroutine
+foo_coro foo_coro_create(resolver, rejector); 
+
+// Syntactic sugar for foo_coro_run(foo_coro_create(...), state)
+void foo_coro_create_and_run(resolver, rejector, foo*);
+
+// Creates new coroutine from another by preserving the rejector.
+foor_coro foo_coro_from(foo_coro*, resolver)
+
+// A special coroutine used to stop the arrow thread execution.
+foo_coro foo_coro_stop()
+
+// Register/Modify pair of file descriptor and coro for one or more IO events.
+int foo_evloop_register(foo_coro*, foo*, event*, fd, op)
+int foo_evloop_modify(foo_coro*, foo*, event*, fd, op)
+int foo_evloop_modify_or_register(foo_coro*, foo*, event*, fd, op)
+
+// Unregister filedescriptor from event loop.
+int foo_evloop_unregister(fd)
+
+// Execute a coroutine.
+void foo_coro_run(foo_coro*, foo*)
+
+// It shouled be called by user to raise exception.
+foo_coro foo_coro_reject(foo_coro*, foo*, errno, DBG, format*, ...)
 ```
-
-##### foo_coro foo_coro_create(resolver, rejector)
-Creates new coroutine
-
-##### void foo_coro_create_and_run(resolver, rejector, foo*)
-Syntactic sugar for foo_coro_run(foo_coro_create(...), state).
-
-##### foor_coro foo_coro_from(foo_coro*, resolver)
-Creates new coroutine from another by preserving the rejector.
-
-##### foo_coro foo_coro_stop()
-A special coroutine used to stop the arrow thread execution.
-
-##### int foo_evloop_register(foo_coro*, foo*, event*, fd, op)
-Register pair of file descriptor and coro for one or more IO events.
-
-##### int foo_evloop_unregister(fd)
-Unregister filedescriptor from event loop.
-
-##### void foo_coro_run(foo_coro*, foo*)
-Executes a coroutine.
-
-##### foo_coro foo_coro_reject(foo_coro*, foo*, errno, DBG, format*, ...)
-It shouled be called by user to raise exception.
