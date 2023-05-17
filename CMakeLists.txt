@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
 project(carrow 
-    VERSION 2.0.0
+    VERSION 2.0.1
     LANGUAGES C
 )
 
@@ -30,6 +30,7 @@ set(CPACK_SET_DESTDIR true)
 set(CPACK_PACKAGE_NAME libcarrow)
 set(CPACK_PACKAGE_CONTACT "Vahid Mardani <vahid.mardani@gmail.com>")
 set(CPACK_GENERATOR DEB)
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libclog (>= 1.1)")
 include(CPack)
 
 

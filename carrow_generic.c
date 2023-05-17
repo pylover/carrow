@@ -8,20 +8,21 @@
 
 /* Core */
 struct CARROW_NAME(coro) {
-    CARROW_NAME(resolver) resolve;
-    CARROW_NAME(rejector) reject;
+    CARROW_NAME(coro_resolver) resolve;
+    CARROW_NAME(coro_rejector) reject;
 };
 
 
 CARROW_NAME(coro)
-CARROW_NAME(coro_create) (CARROW_NAME(resolver) f, CARROW_NAME(rejector) r) {
+CARROW_NAME(coro_create) (CARROW_NAME(coro_resolver) f, 
+        CARROW_NAME(coro_rejector) r) {
     return (CARROW_NAME(coro)){f, r};
 }
 
 
 CARROW_NAME(coro)
 CARROW_NAME(coro_create_from) (CARROW_NAME(coro) *base, 
-        CARROW_NAME(resolver) f) {
+        CARROW_NAME(coro_resolver) f) {
     return (CARROW_NAME(coro)){f, base->reject};
 }
 
@@ -76,8 +77,8 @@ CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *s) {
 
 
 void
-CARROW_NAME(coro_create_and_run) (CARROW_NAME(resolver) f, CARROW_NAME(rejector) r, 
-        CARROW_ENTITY *state) {
+CARROW_NAME(coro_create_and_run) (CARROW_NAME(coro_resolver) f, 
+        CARROW_NAME(coro_rejector) r, CARROW_ENTITY *state) {
     CARROW_NAME(coro) c = CARROW_NAME(coro_create)(f, r);
     CARROW_NAME(coro_run)(&c, state);
 }
