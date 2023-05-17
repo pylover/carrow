@@ -17,8 +17,8 @@ struct foobar {
 #define CSTATE  struct foobar
 #define CCORO   foobarcoro
 #define CNAME(n) foobarcoro_ ## n
-#include "carrow.h"
-#include "carrow.c"
+#include "carrow_generic_types.h"
+#include "carrow_generic_types.c"
 
 
 #define CHUNK_SIZE  256

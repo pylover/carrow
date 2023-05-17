@@ -2,29 +2,58 @@
 #define CARROW_H
 
 
-#include <stdbool.h>
+#include <sys/epoll.h>
 
 
-struct CCORO;
+#define EVMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK) \
+        || (errno == EINPROGRESS))
+#define EVIN      EPOLLIN
+#define EVOUT     EPOLLOUT
+#define EVET      EPOLLET
+#define EVONESHOT EPOLLONESHOT
+#define EVRDHUP   EPOLLRDHUP
+#define EVPRI     EPOLLPRI
+#define EVERR     EPOLLERR
+#define EVHUP     EPOLLHUP
+#define EVWAKEUP  EPOLLWAKEUP
 
 
-typedef struct CCORO 
-    (*CNAME(resolver)) (struct CCORO *self, CSTATE *state);
+enum carrow_event_status {
+    CES_OK,
+    CES_ERR,
+    CES_TERM,
+};
 
 
-typedef struct CCORO 
-    (*CNAME(rejector)) (struct CCORO *self, CSTATE *state, int no);
+struct carrow_event {
+    int fd;
+    int op;
+};
+
+
+typedef void (*carrow_event_handler) 
+    (void *coro, void *state, enum carrow_event_status);
+
+
+int
+carrow_init();
 
 
 void
-CNAME(resolve) (struct CCORO *self, CSTATE *s);
+carrow_deinit();
 
 
-#define __FILENAME__ \
-    (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+int
+carrow_evloop_add(void *c, void *state, struct carrow_event *e, 
+        carrow_event_handler handler);
 
 
-#define DBG errno, __FILENAME__, __LINE__, __FUNCTION__
+int
+carrow_evloop_del(int fd);
+
+
+int
+carrow_evloop(volatile int *status);
 
 
 #endif

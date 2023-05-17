@@ -1,128 +1,239 @@
-#include "carrow_ev.h"
+#include "carrow.h"
 
 #include <clog.h>
 
-#include <stdarg.h>
 #include <errno.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/epoll.h>
 
 
-/* Core */
-struct CCORO {
-    CNAME(resolver) resolve;
-    CNAME(rejector) reject;
+#define EVCHUNK     128
+static unsigned int _openmax;
+static volatile unsigned int _bagscount;
+static struct _evbag **_bags;
+static int _epollfd = -1;
+
+
+/* Disposables */
+#define DISPOSABLESMAX   (EVCHUNK * 2)
+static int _disposablescount;
+static int _disposables[DISPOSABLESMAX];
+
+
+struct _coro {
+    void *resolve;
+    void *reject;
+};
+
+    
+struct _evbag {
+    struct carrow_event *event;
+    struct _coro coro;
+    void *state;
+    carrow_evhandler handler;
 };
 
 
-struct CCORO
-CNAME(new) (CNAME(resolver) f, CNAME(rejector) r) {
-    return (struct CCORO){f, r};
-}
-
-
-struct CCORO
-CNAME(from) (struct CCORO *base, CNAME(resolver) f) {
-    return (struct CCORO){f, base->reject};
-}
-
-
-struct CCORO
-CNAME(stop) () {
-    return (struct CCORO){NULL, NULL};
-}
-
-
-struct CCORO
-CNAME(reject) (struct CCORO *self, CSTATE *s, int no,
-        const char *filename, int lineno, const char *function,
-        const char *format, ... ) {
-    va_list args;
-
-    if (format) { 
-        va_start(args, format);
+static struct _evbag *
+_evbag_new(struct _coro *self, void *state, struct carrow_event *e, 
+        carrow_evhandler handler) {
+    int fd = e->fd;
+    
+    struct _evbag *bag = _bags[fd];
+    if (bag == NULL) {
+        bag = malloc(sizeof(struct _evbag));
+        if (bag == NULL) {
+            FATAL("Out of memory");
+        }
+        _bags[fd] = bag;
+        _bagscount++;
+        bag->handler = handler;
     }
+    bag->coro = *self;
+    bag->event = e;
+    bag->state = state;
 
-    clog_vlog(
-            CLOG_ERROR,
-            filename, 
-            lineno, 
-            function, 
-            true, 
-            format, 
-            args
-        );
-
-    if (format) { 
-        va_end(args);
-    }
-   
-    if (self->reject != NULL) {
-        return self->reject(self, s, no);
-    }
-
-    errno = 0;
-    return CNAME(stop)();
+    return bag;
 }
 
 
 static void
-CNAME(evhandler) (struct CCORO *self, CSTATE *s, 
-        enum carrow_evstatus status) {
-    struct CCORO c = *self;
-    int eno;
-   
-    if (status != EE_OK) {
-        if (status == EE_ERR) {
-            eno = errno;
-        }
-        else {
-            eno = EINTR;
-        }
-        c.reject(self, s, eno);
+_evbag_free(int fd) {
+    struct _evbag *bag = _bags[fd];
+    if (bag == NULL) {
         return;
     }
+    
+    free(bag);
+    _bags[fd] = NULL;
+}
 
-    while (c.resolve != NULL) {
-        c = c.resolve(&c, s);
+
+static void
+_dispose_asap(int fd) {
+    if ((DISPOSABLESMAX - _disposablescount) == 1) {
+        FATAL("Disposables overflow");
+    }
+
+    _disposables[_disposablescount++] = fd;
+}
+
+
+static void
+_dispose_all() {
+    int fd;
+
+    while (_disposablescount) {
+        fd = _disposables[--_disposablescount];
+        _evbag_free(fd);
     }
 }
 
 
 int
-CNAME(wait) (struct CCORO *c, CSTATE *s, struct carrow_event *e, int fd, 
-        int op) {
-    e->fd = fd;
-    e->op = op;
-    return carrow_wait(c, s, e, (carrow_evhandler)CNAME(evhandler));
-}
-
-
-int
-CNAME(nowait) (int fd) {
-    return carrow_nowait(fd);
-}
-
-
-void
-CNAME(resolve) (struct CCORO *self, CSTATE *s) {
-    struct CCORO c = *self;
+carrow_init() {
+    if (_epollfd != -1 ) {
+        ERROR("Carrow event loop already initialized.");
+        return -1;
+    }
    
-    while (c.resolve != NULL) {
-        c = c.resolve(&c, s);
+    /* Find maximum allowed openfiles */
+    _openmax = sysconf(_SC_OPEN_MAX);
+    if (_openmax == -1) {
+        ERROR("Cannot get maximum allowed openfiles for this process.");
+        return -1;
     }
-}
 
+    _bagscount = 0;
+    _bags = calloc(_openmax, sizeof(struct _evbag*));
+    if (_bags == NULL) {
+        FATAL("Out of memory");
+    }
 
-void
-CNAME(run) (CNAME(resolver) f, CNAME(rejector) r, CSTATE *state) {
-    struct CCORO c = {f, r};
-
-    CNAME(resolve)(&c, state);
+    _epollfd = epoll_create1(0);
+    if (_epollfd < 0) {
+        return -1;
+    }
+    
+    _disposablescount = 0;
+    return 0;
 }
 
 
 int
-CNAME(runloop) (CNAME(resolver) f, CNAME(rejector) r, CSTATE *state,
-        volatile int *status) {
-    CNAME(run)(f, r, state);
-    return carrow_evloop(status);
+carrow_evloop_add(void *coro, void *state, struct carrow_event *e, 
+        carrow_evhandler handler) {
+    struct epoll_event ee;
+    struct _evbag *bag = _evbag_new(coro, state, e, handler);
+    
+    int fd = e->fd;
+    ee.events = e->op;
+    ee.data.fd = fd;
+    
+    if (epoll_ctl(_epollfd, EPOLL_CTL_MOD, fd, &ee)) {
+        if (errno == ENOENT) {
+            errno = 0;
+            return epoll_ctl(_epollfd, EPOLL_CTL_ADD, fd, &ee);
+        }
+
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int
+carrow_evloop_del(int fd) {
+    struct _evbag *bag = _bags[fd];
+    
+    if (bag != NULL) {
+        _bagscount--;
+        _dispose_asap(fd);
+    }
+
+    return epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, NULL);
+}
+
+
+int
+carrow_evloop(volatile int *status) {
+    int i;
+    int fd;
+    int nfds;
+    int ret = 0;
+    struct _evbag *bag;
+    struct epoll_event ee;
+    struct epoll_event events[EVCHUNK];
+    enum carrow_event_status es;
+
+    while (_bagscount && ((status == NULL) || (*status > EXIT_FAILURE))) {
+        errno = 0;
+        // DEBUG("bags: %d", _bagscount);
+        nfds = epoll_wait(_epollfd, events, EVCHUNK, -1);
+        if (nfds < 0) {
+            ret = -1;
+            break;
+        }
+
+        if (nfds == 0) {
+            ret = 0;
+            break;
+        }
+
+        for (i = 0; i < nfds; i++) {
+            ee = events[i];
+            fd = ee.data.fd;
+            bag = _bags[fd];
+
+            if (bag == NULL) {
+                /* Event already removed */
+                continue;
+            }
+
+            bag->event->op = ee.events;
+            bag->event->fd = fd;
+
+            if ((ee.events & EVRDHUP) || (ee.events & EVERR)) {
+                es = CES_ERR;
+            }
+            else {
+                es = CES_OK;
+            }
+            bag->handler(&(bag->coro), bag->state, es);
+        }
+        
+        _dispose_all();
+    }
+
+terminate:
+
+    for (i = 0; i < _openmax; i++) {
+        bag = _bags[i];
+        if (bag == NULL) {
+            continue;
+        }
+        
+        bag->event->fd = i;
+        bag->handler(&(bag->coro), bag->state, CES_TERM);
+    }
+    
+    _dispose_all();
+
+    return ret;
+}
+
+
+void
+carrow_deinit() {
+    int i;
+    struct _evbag *bag;
+
+    close(_epollfd);
+    _epollfd = -1;
+
+    free(_bags);
+    _bags = NULL;
+    errno = 0;
 }
