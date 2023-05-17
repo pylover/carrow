@@ -26,13 +26,18 @@ struct carrow_event {
 
 
 // Initialize carrow and event loop.
-int carrow_init()
+int 
+carrow_init();
+
 
 // Deinitialize carrow and event loop.
-void carrow_deinit()
+void 
+carrow_deinit();
+
 
 // Block and run event loop.
-int carrow_evloop(volatile int *status)
+int 
+carrow_evloop(volatile int *status);
 ```
 
 
@@ -81,7 +86,7 @@ foo_coro_create_and_run(foo_coro_resolver, foo_coro_rejector, foo* foo);
 
 
 // Creates new coroutine from another by preserving the rejector.
-foor_coro 
+foo_coro 
 foo_coro_from(foo_coro *self, foo_coro_resolver);
 
 
