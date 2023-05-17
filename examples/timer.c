@@ -1,3 +1,5 @@
+#include "carrow.h"
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
@@ -5,22 +7,16 @@
 
 
 /* TCP server carrow types and function */
-struct state {
+typedef struct timer {
     int fd;
     unsigned long value;
-};
+} timer;
 
 
-#undef CSTATE
-#undef CCORO
-#undef CNAME
-#undef CARROW_H
-
-#define CSTATE   struct state
-#define CCORO    timer
-#define CNAME(n) timer_ ## n
-#include "carrow.h"
-#include "carrow.c"
+#undef CARROW_ENTITY
+#define CARROW_ENTITY timer
+#include "carrow_generic.h"
+#include "carrow_generic.c"
 
 
 #define WORKING 99999999
@@ -29,33 +25,34 @@ static struct sigaction old_action;
 static struct carrow_event ev;
 
 
-struct timer 
-errorA(struct timer *self, struct state *state, int no) {
+struct timer_coro 
+errorA(struct timer_coro *self, struct timer *state, int no) {
     if (state->fd != -1) {
-        timer_nowait(state->fd);
+        timer_evloop_unregister(state->fd);
         close(state->fd);
     }
-    return timer_stop();
+    return timer_coro_stop();
 }
 
 
-struct timer 
-hitA(struct timer *self, struct state *state) {
+struct timer_coro 
+hitA(struct timer_coro *self, struct timer *state) {
     unsigned long value;
     ssize_t bytes = read(state->fd, &value, sizeof(value));
     if (bytes == 0) {
-        return timer_reject(self, state, DBG, "read: EOF");
+        return timer_coro_reject(self, state, __DBG__, "read: EOF");
     }
 
     if (bytes == -1) {
         if (!EVMUSTWAIT()) {
-            return timer_reject(self, state, DBG, "read");
+            return timer_coro_reject(self, state, __DBG__, "read");
         }
 
-        if (timer_wait(self, state, &ev, state->fd, EVIN | EVONESHOT)) {
-            return timer_reject(self, state, DBG, "timer_wait");
+        if (timer_evloop_register(self, state, &ev, state->fd, 
+                    EVIN | EVONESHOT)) {
+            return timer_coro_reject(self, state, __DBG__, "timer_wait");
         }
-        return timer_stop();
+        return timer_coro_stop();
     }
     
     state->value += value;
@@ -64,21 +61,21 @@ hitA(struct timer *self, struct state *state) {
 }
 
 
-struct timer 
-timerA(struct timer *self, struct state *state) {
+struct timer_coro 
+timerA(struct timer_coro *self, struct timer *state) {
     int fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
     if (fd == -1) {
-        return timer_reject(self, state, DBG, "timerfd_create");
+        return timer_coro_reject(self, state, __DBG__, "timerfd_create");
     }
 
     state->fd = fd;
     struct timespec sec1 = {1, 0};
     struct itimerspec spec = {sec1, sec1};
     if (timerfd_settime(fd, 0, &spec, NULL) == -1) {
-        return timer_reject(self, state, DBG, "timerfd_settime");
+        return timer_coro_reject(self, state, __DBG__, "timerfd_settime");
     }
     
-    return timer_from(self, hitA);
+    return timer_coro_create_from(self, hitA);
 }
 
 
@@ -105,12 +102,14 @@ main() {
     catch_signal();
     
     /* Create timer */
-    struct state state = {
+    struct timer state = {
         .fd = -1,
     };
     
     carrow_init();
-    if (timer_runloop(timerA, errorA, &state, &status)) {
+
+    timer_coro_create_and_run(timerA, errorA, &state);
+    if (carrow_evloop(&status)) {
         ret = EXIT_FAILURE;
     }
     
