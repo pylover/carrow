@@ -223,6 +223,7 @@ carrow_evloop(volatile int *status) {
             else {
                 es = CES_OK;
             }
+            bag->event->status = es;
             bag->handler(&(bag->coro), bag->state, es);
         }
         
@@ -238,6 +239,7 @@ terminate:
         }
         
         bag->event->fd = i;
+        bag->event->status = CES_TERM;
         bag->handler(&(bag->coro), bag->state, CES_TERM);
     }
     

@@ -37,6 +37,7 @@ enum carrow_event_status {
 
 
 struct carrow_event {
+    enum carrow_event_status status;
     int fd;
     int op;
 };
