@@ -166,6 +166,13 @@ carrow_evloop_modify_or_register(void *coro, void *state,
 }
 
 
+bool
+carrow_evloop_isregistered(int fd) {
+    struct _evbag *bag = _bags[fd];
+    return bag == NULL;
+}
+
+
 int
 carrow_evloop_unregister(int fd) {
     struct _evbag *bag = _bags[fd];

@@ -2,6 +2,7 @@
 #define CARROW_H
 
 
+#include <stdbool.h>
 #include <sys/epoll.h>
 
 
@@ -67,6 +68,10 @@ carrow_evloop_modify(void *c, void *state, struct carrow_event *e,
 int
 carrow_evloop_modify_or_register(void *c, void *state, struct carrow_event *e, 
         carrow_event_handler handler);
+
+
+bool
+carrow_evloop_isregistered(int fd);
 
 
 int
