@@ -90,7 +90,8 @@ CARROW_NAME(event_handler) (CARROW_NAME(coro) *self, CARROW_ENTITY *s,
         else {
             eno = EINTR;
         }
-        c = CARROW_NAME(coro_reject)(self, s, __DBG__, "epoll_wait()");
+        c = CARROW_NAME(coro_reject)(self, s, __DBG__, 
+                "carrow_event_handler()");
         return;
     }
     else {

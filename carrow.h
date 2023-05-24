@@ -30,6 +30,12 @@
 #define EVWAKEUP  EPOLLWAKEUP
 
 
+struct generic_coro {
+    void *resolve;
+    void *reject;
+};
+
+
 enum carrow_event_status {
     CES_OK,
     CES_ERR,

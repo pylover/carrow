@@ -6,7 +6,7 @@
 #include <sys/timerfd.h>
 
 
-/* TCP server carrow types and function */
+/* timer types and function */
 typedef struct timer {
     int fd;
     unsigned long value;

@@ -21,22 +21,17 @@ static int _disposablescount;
 static int _disposables[DISPOSABLESMAX];
 
 
-struct _coro {
-    void *resolve;
-    void *reject;
-};
-
-    
 struct _evbag {
     struct carrow_event *event;
-    struct _coro coro;
+    struct generic_coro coro;
     void *state;
     carrow_event_handler handler;
+    bool terminating;
 };
 
 
 static struct _evbag *
-_evbag_new(struct _coro *self, void *state, struct carrow_event *e, 
+_evbag_new(struct generic_coro *self, void *state, struct carrow_event *e, 
         carrow_event_handler handler) {
     int fd = e->fd;
     
@@ -48,6 +43,7 @@ _evbag_new(struct _coro *self, void *state, struct carrow_event *e,
         }
         _bags[fd] = bag;
         _bagscount++;
+        DEBUG("Bags new: %d all: %d", fd, _bagscount);
         bag->handler = handler;
     }
     bag->coro = *self;
@@ -65,6 +61,7 @@ _evbag_free(int fd) {
         return;
     }
     
+    DEBUG("Bags free: %d all: %d", fd, _bagscount);
     free(bag);
     _bags[fd] = NULL;
 }
@@ -177,9 +174,11 @@ int
 carrow_evloop_unregister(int fd) {
     struct _evbag *bag = _bags[fd];
     
-    if (bag != NULL) {
+    if ((bag != NULL) && (!bag->terminating)) {
         _bagscount--;
+        bag->terminating = true;
         _dispose_asap(fd);
+        DEBUG("Bags undegister: %d all: %d", fd, _bagscount);
     }
 
     return epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, NULL);
@@ -199,8 +198,9 @@ carrow_evloop(volatile int *status) {
 
     while (_bagscount && ((status == NULL) || (*status > EXIT_FAILURE))) {
         errno = 0;
-        // DEBUG("bags: %d", _bagscount);
+        DEBUG("bags: %d", _bagscount);
         nfds = epoll_wait(_epollfd, events, EVCHUNK, -1);
+        DEBUG("nfds: %d", nfds);
         if (nfds < 0) {
             ret = -1;
             break;
@@ -223,8 +223,10 @@ carrow_evloop(volatile int *status) {
 
             bag->event->op = ee.events;
             bag->event->fd = fd;
-
+            
+            DEBUG("event start: %d", fd);
             if ((ee.events & EVRDHUP) || (ee.events & EVERR)) {
+                DEBUG("event err: %d err: %d", fd, errno);
                 es = CES_ERR;
             }
             else {
@@ -232,6 +234,7 @@ carrow_evloop(volatile int *status) {
             }
             bag->event->status = es;
             bag->handler(&(bag->coro), bag->state, es);
+            DEBUG("event end: %d", fd);
         }
         
         _dispose_all();
@@ -239,6 +242,8 @@ carrow_evloop(volatile int *status) {
 
 terminate:
 
+    DEBUG("Terminating, status: %d", *status);
+    DEBUG("Terminating, bags: %d", _bagscount);
     for (i = 0; i < _openmax; i++) {
         bag = _bags[i];
         if (bag == NULL) {
