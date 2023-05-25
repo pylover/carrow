@@ -2,6 +2,7 @@
 #include "tty.h"
 #include "carrow.h"
 
+#include <clog.h>
 #include <mrb.h>
 
 #include <stdlib.h>
@@ -32,14 +33,11 @@ typedef struct tcpc {
 #define WORKING 99999999
 volatile int status = WORKING;
 static struct sigaction old_action;
-static struct carrow_event ev = {
-    .fd = STDIN_FILENO,
-    .op = EVIN,
-};
 
 
 struct tcpc_coro
-errorA(struct tcpc_coro *self, struct tcpc *state, int no) {
+errorA(struct tcpc_coro *self, struct tcpc *state, int fd, int events, 
+        int no) {
     struct tcpconn *conn = &(state->conn);
     
     tcpc_evloop_unregister(STDIN_FILENO);
@@ -58,11 +56,11 @@ errorA(struct tcpc_coro *self, struct tcpc *state, int no) {
 
 
 ssize_t
-writeA(struct mrb *b, int fd, size_t count) {
+writeA(struct mrb *b, int fd, size_t count, int events) {
     int res = 0;
     int bytes = 0;
 
-    if (ev.fd != fd || !(ev.op & EVOUT)) {
+    if (!(events & EVOUT)) {
         return 0;
     }
 
@@ -87,11 +85,11 @@ failed:
 
 
 ssize_t
-readA(struct mrb *b, int fd, size_t count) {
+readA(struct mrb *b, int fd, size_t count, int events) {
     int res = 0;
     int bytes = 0;
 
-    if (ev.fd != fd || !(ev.op & EVIN)) {
+    if (!(events & EVIN)) {
         return 0;
     }
 
@@ -116,7 +114,7 @@ failed:
 
 
 struct tcpc_coro 
-ioA(struct tcpc_coro *self, struct tcpc *state) {
+ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     ssize_t bytes;
     struct mrb *in = state->inbuff;
     struct mrb *out = state->outbuff;
@@ -125,35 +123,45 @@ ioA(struct tcpc_coro *self, struct tcpc *state) {
     int outused = mrb_used(out);
     int inavail = mrb_available(out);
     int inused = mrb_used(in);
- 
+
+    DEBUG("events: %d", events);
+    if ((events & EVERR) || (events & EVRDHUP)) {
+        return tcpc_coro_reject(self, state, fd, events, __DBG__, "evloop", 
+                fd);
+    }
+
     /* stdin read */
-    bytes = readA(out, STDIN_FILENO, outavail);
+    bytes = readA(out, STDIN_FILENO, outavail, events);
     if (bytes == -1) {
-        return tcpc_coro_reject(self, state, __DBG__, "read(%d)", ev.fd);
+        return tcpc_coro_reject(self, state, fd, events, __DBG__, "read(%d)", 
+                fd);
     }
     outavail -= bytes;
     outused += bytes;
 
     /* stdout write */
-    bytes = writeA(in, STDOUT_FILENO, inused);
+    bytes = writeA(in, STDOUT_FILENO, inused, events);
     if (bytes == -1) {
-        return tcpc_coro_reject(self, state, __DBG__, "write(%d)", ev.fd);
+        return tcpc_coro_reject(self, state, fd, events, __DBG__, "write(%d)", 
+                fd);
     }
     inused -= bytes;
     inavail += bytes;
 
     /* tcp write */
-    bytes = writeA(out, conn->fd, outused);
+    bytes = writeA(out, conn->fd, outused, events);
     if (bytes == -1) {
-        return tcpc_coro_reject(self, state, __DBG__, "write(%d)", ev.fd);
+        return tcpc_coro_reject(self, state, fd, events, __DBG__, "write(%d)", 
+                fd);
     }
     outused -= bytes;
     outavail += bytes;
 
     /* tcp read */
-    bytes = readA(in, conn->fd, inavail);
+    bytes = readA(in, conn->fd, inavail, events);
     if (bytes == -1) {
-        return tcpc_coro_reject(self, state, __DBG__, "read(%d)", conn->fd);
+        return tcpc_coro_reject(self, state, fd, events, __DBG__, "read(%d)", 
+                conn->fd);
     }
     inavail -= bytes;
     inused += bytes;
@@ -163,15 +171,17 @@ ioA(struct tcpc_coro *self, struct tcpc *state) {
     int op;
 
     /* stdin */
-    if (outavail && tcpc_evloop_register(self, state, &ev, STDIN_FILENO, 
+    if (outavail && tcpc_evloop_modify_or_register(self, state, STDIN_FILENO, 
                 EVIN | EVONESHOT | EVET)) {
-        return tcpc_coro_reject(self, state, __DBG__, "wait(%d)", ev.fd);
+        return tcpc_coro_reject(self, state, fd, events, __DBG__, "wait(%d)", 
+                STDIN_FILENO);
     }
 
     /* stdout */
-    if (inused && tcpc_evloop_register(self, state, &ev, STDOUT_FILENO, 
+    if (inused && tcpc_evloop_modify_or_register(self, state, STDOUT_FILENO, 
                 EVOUT | EVONESHOT | EVET)) {
-        return tcpc_coro_reject(self, state, __DBG__, "wait(%d)", ev.fd);
+        return tcpc_coro_reject(self, state, fd, events, __DBG__, "wait(%d)", 
+                STDOUT_FILENO);
     }
 
     /* tcp socket */
@@ -185,8 +195,9 @@ ioA(struct tcpc_coro *self, struct tcpc *state) {
             op |= EVOUT;
         }
 
-        if (tcpc_evloop_register(self, state, &ev, conn->fd, op)) {
-            return tcpc_coro_reject(self, state, __DBG__, "wait(%d)", ev.fd);
+        if (tcpc_evloop_modify_or_register(self, state, conn->fd, op)) {
+            return tcpc_coro_reject(self, state, fd, events, __DBG__, 
+                    "wait(%d)", fd);
         }
     }
     
@@ -195,7 +206,7 @@ ioA(struct tcpc_coro *self, struct tcpc *state) {
 
 
 struct tcpc_coro 
-connectA(struct tcpc_coro *self, struct tcpc *state) {
+connectA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     struct tcpconn *conn = &(state->conn);
     if (tcp_connect(conn, state->hostname, state->port)) {
         goto failed;
@@ -203,8 +214,8 @@ connectA(struct tcpc_coro *self, struct tcpc *state) {
 
     if (errno == EINPROGRESS) {
         errno = 0;
-        if (tcpc_evloop_register(self, state, &ev, conn->fd, 
-                    EVOUT | EVONESHOT)) {
+        DEBUG("reg connect: %d", conn->fd);
+        if (tcpc_evloop_register(self, state, conn->fd, EVOUT | EVONESHOT)) {
             goto failed;
         }
 
@@ -214,8 +225,8 @@ connectA(struct tcpc_coro *self, struct tcpc *state) {
     return tcpc_coro_create_from(self, ioA);
 
 failed:
-    return tcpc_coro_reject(self, state, __DBG__, "tcp_connect(%s:%s)", 
-            state->hostname, state->port);
+    return tcpc_coro_reject(self, state, fd, events, __DBG__, 
+            "tcp_connect(%s:%s)", state->hostname, state->port);
 }
 
 
@@ -262,7 +273,7 @@ main() {
 
     carrow_init();
    
-    tcpc_coro_create_and_run(connectA, errorA, &state);
+    tcpc_coro_create_and_run(connectA, errorA, &state, -1, 0);
     if (carrow_evloop(&status)) {
         ret = EXIT_FAILURE;
     }

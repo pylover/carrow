@@ -27,9 +27,9 @@ CARROW_NAME(coro_stop) () {
 
 
 CARROW_NAME(coro)
-CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int no, 
-        const char *filename, int lineno, const char *function, 
-        const char *format, ... ) {
+CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int fd,
+        int events, int no, const char *filename, int lineno, 
+        const char *function, const char *format, ... ) {
     va_list args;
 
     if (format) { 
@@ -51,7 +51,7 @@ CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int no,
     }
    
     if (self->reject != NULL) {
-        return self->reject(self, s, no);
+        return self->reject(self, s, fd, events, no);
     }
 
     errno = 0;
@@ -60,74 +60,64 @@ CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int no,
 
 
 void
-CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *s) {
+CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int efd, 
+        int events) {
     CARROW_NAME(coro) c = *self;
    
     while (c.resolve != NULL) {
-        c = c.resolve(&c, s);
+        c = c.resolve(&c, s, efd, events);
     }
 }
 
 
 void
 CARROW_NAME(coro_create_and_run) (CARROW_NAME(coro_resolver) f, 
-        CARROW_NAME(coro_rejector) r, CARROW_ENTITY *state) {
+        CARROW_NAME(coro_rejector) r, CARROW_ENTITY *state, int fd, 
+        int events) {
     CARROW_NAME(coro) c = CARROW_NAME(coro_create)(f, r);
-    CARROW_NAME(coro_run)(&c, state);
+    CARROW_NAME(coro_run)(&c, state, fd, events);
 }
 
 
 static void
 CARROW_NAME(event_handler) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, 
-        enum carrow_event_status status) {
-    CARROW_NAME(coro) c;
-    int eno;
+        int efd, int events) {
+    // CARROW_NAME(coro) c;
+    // int eno;
    
-    if (status != CES_OK) {
-        if (status == CES_ERR) {
-            eno = errno;
-        }
-        else {
-            eno = EINTR;
-        }
-        c = CARROW_NAME(coro_reject)(self, s, __DBG__, 
-                "carrow_event_handler()");
-        return;
-    }
-    else {
-        c = *self;
-    }
-    
-    CARROW_NAME(coro_run) (&c, s);
+    DEBUG("events; %d %d", efd, events);
+    // if ((events & EVERR) || (events & EVRDHUP)) {
+    //     c = CARROW_NAME(coro_reject)(self, s, efd, events, __DBG__, 
+    //             "event_handler");
+    // }
+    // else {
+    //     c = *self;
+    // }
+
+    CARROW_NAME(coro_run) (self, s, efd, events);
 }
 
 
 int
-CARROW_NAME(evloop_register) (CARROW_NAME(coro) *c, CARROW_ENTITY *s, 
-        struct carrow_event *e, int fd, int op) {
-    e->fd = fd;
-    e->op = op;
-    return carrow_evloop_register(c, s, e, 
+CARROW_NAME(evloop_register) (CARROW_NAME(coro) *c, CARROW_ENTITY *s, int fd, 
+        int events) {
+    return carrow_evloop_register(c, s, fd, events,
             (carrow_event_handler)CARROW_NAME(event_handler));
 }
 
 
 int
-CARROW_NAME(evloop_modify) (CARROW_NAME(coro) *c, CARROW_ENTITY *s, 
-        struct carrow_event *e, int fd, int op) {
-    e->fd = fd;
-    e->op = op;
-    return carrow_evloop_modify(c, s, e, 
+CARROW_NAME(evloop_modify) (CARROW_NAME(coro) *c, CARROW_ENTITY *s, int fd, 
+        int events) {
+    return carrow_evloop_modify(c, s, fd, events,
             (carrow_event_handler)CARROW_NAME(event_handler));
 }
 
 
 int
 CARROW_NAME(evloop_modify_or_register) (CARROW_NAME(coro) *c, 
-        CARROW_ENTITY *s, struct carrow_event *e, int fd, int op) {
-    e->fd = fd;
-    e->op = op;
-    return carrow_evloop_modify_or_register(c, s, e, 
+        CARROW_ENTITY *s, int fd, int events) {
+    return carrow_evloop_modify_or_register(c, s, fd, events,
             (carrow_event_handler)CARROW_NAME(event_handler));
 }
 

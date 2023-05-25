@@ -30,28 +30,8 @@
 #define EVWAKEUP  EPOLLWAKEUP
 
 
-struct generic_coro {
-    void *resolve;
-    void *reject;
-};
-
-
-enum carrow_event_status {
-    CES_OK,
-    CES_ERR,
-    CES_TERM,
-};
-
-
-struct carrow_event {
-    enum carrow_event_status status;
-    int fd;
-    int op;
-};
-
-
 typedef void (*carrow_event_handler) 
-    (void *coro, void *state, enum carrow_event_status);
+    (void *coro, void *state, int efd, int events);
 
 
 int
@@ -63,21 +43,18 @@ carrow_deinit();
 
 
 int
-carrow_evloop_register(void *c, void *state, struct carrow_event *e, 
-        carrow_event_handler handler);
-
-int
-carrow_evloop_modify(void *c, void *state, struct carrow_event *e, 
+carrow_evloop_register(void *coro, void *state, int efd, int events, 
         carrow_event_handler handler);
 
 
 int
-carrow_evloop_modify_or_register(void *c, void *state, struct carrow_event *e, 
+carrow_evloop_modify(void *c, void *state, int efd, int events, 
         carrow_event_handler handler);
 
 
-bool
-carrow_evloop_isregistered(int fd);
+int
+carrow_evloop_modify_or_register(void *coro, void *state, int fd, int events, 
+        carrow_event_handler handler);
 
 
 int

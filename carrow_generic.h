@@ -11,11 +11,12 @@ typedef struct CARROW_NAME(coro) CARROW_NAME(coro);
 
 
 typedef CARROW_NAME(coro) (*CARROW_NAME(coro_resolver)) 
-    (CARROW_NAME(coro) *self, CARROW_ENTITY *state);
+    (CARROW_NAME(coro) *self, CARROW_ENTITY *state, int efd, int events);
 
 
 typedef CARROW_NAME(coro) (*CARROW_NAME(coro_rejector)) 
-    (CARROW_NAME(coro) *self, CARROW_ENTITY *state, int no);
+    (CARROW_NAME(coro) *self, CARROW_ENTITY *state, int no, int efd, 
+     int events);
 
 
 struct CARROW_NAME(coro) {
@@ -43,33 +44,35 @@ CARROW_NAME(coro_stop) ();
 
 
 CARROW_NAME(coro)
-CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int no, 
-        const char *filename, int lineno, const char *function, 
-        const char *format, ... );
+CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int fd,
+        int events, int no, const char *filename, int lineno, 
+        const char *function, const char *format, ... );
 
 
 void
-CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *s);
+CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int efd, 
+        int events);
 
 
 void
 CARROW_NAME(coro_create_and_run) (CARROW_NAME(coro_resolver) f, 
-        CARROW_NAME(coro_rejector) r, CARROW_ENTITY *state);
+        CARROW_NAME(coro_rejector) r, CARROW_ENTITY *state, int fd, 
+        int events);
 
 
 int
 CARROW_NAME(evloop_register) (CARROW_NAME(coro) *c, CARROW_ENTITY *s, 
-        struct carrow_event *e, int fd, int op);
+        int fd, int events);
 
 
 int
-CARROW_NAME(evloop_modify) (CARROW_NAME(coro) *c, CARROW_ENTITY *s, 
-        struct carrow_event *e, int fd, int op);
+CARROW_NAME(evloop_modify) (CARROW_NAME(coro) *c, CARROW_ENTITY *s, int fd, 
+        int events);
 
 
 int
 CARROW_NAME(evloop_modify_or_register) (CARROW_NAME(coro) *c, 
-        CARROW_ENTITY *s, struct carrow_event *e, int fd, int op);
+        CARROW_ENTITY *s, int fd, int events);
 
 
 int
