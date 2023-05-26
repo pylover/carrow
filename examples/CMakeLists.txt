@@ -47,15 +47,15 @@ add_custom_target(profile_tcpserver
 )
 
 
-# add_executable(timer
-#     $<TARGET_OBJECTS:carrow>
-#     timer.c
-# )
-# target_include_directories(timer PUBLIC "${CMAKE_SOURCE_DIR}")
-# target_link_libraries(timer PUBLIC clog mrb)
-# add_custom_target(run_timer $<TARGET_FILE:timer>)
-# add_custom_target(profile_timer
-#     COMMAND "valgrind" 
-#     ${VALGRIND_FLAGS}
-#     $<TARGET_FILE:timer>
-# )
+add_executable(timer
+    $<TARGET_OBJECTS:carrow>
+    timer.c
+)
+target_include_directories(timer PUBLIC "${CMAKE_SOURCE_DIR}")
+target_link_libraries(timer PUBLIC clog mrb)
+add_custom_target(run_timer $<TARGET_FILE:timer>)
+add_custom_target(profile_timer
+    COMMAND "valgrind" 
+    ${VALGRIND_FLAGS}
+    $<TARGET_FILE:timer>
+)
