@@ -82,18 +82,7 @@ CARROW_NAME(coro_create_and_run) (CARROW_NAME(coro_resolver) f,
 static void
 CARROW_NAME(event_handler) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, 
         int efd, int events) {
-    // CARROW_NAME(coro) c;
-    // int eno;
-   
     DEBUG("events; %d %d", efd, events);
-    // if ((events & EVERR) || (events & EVRDHUP)) {
-    //     c = CARROW_NAME(coro_reject)(self, s, efd, events, __DBG__, 
-    //             "event_handler");
-    // }
-    // else {
-    //     c = *self;
-    // }
-
     CARROW_NAME(coro_run) (self, s, efd, events);
 }
 

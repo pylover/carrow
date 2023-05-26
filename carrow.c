@@ -75,13 +75,14 @@ static int
 evbags_init(unsigned int openmax) {
     evbags_count = 0;
     evbags = calloc(openmax, sizeof(struct evbag*));
-
+    
     if (evbags == NULL) {
         errno = ENOMEM;
         ERROR("Out of memory");
         return -1;
     }
-
+    
+    memset(evbags, 0, sizeof(struct evbag*) * openmax);
     return 0;
 }
 
@@ -224,11 +225,12 @@ evloop:
 terminate:
 
     for (fd = 0; fd < _openmax; fd++) {
-        bag = evbags[i];
+        bag = evbags[fd];
         if (bag == NULL) {
             continue;
         }
         
+        DEBUG("terminating: %d %p", fd, bag);
         bag->handler(&(bag->coro), bag->state, fd, 0);
     }
 
