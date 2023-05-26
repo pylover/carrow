@@ -65,6 +65,24 @@ evbag_delete(int fd) {
 }
 
 
+void
+evbag_handle(int fd, int events, struct generic_coro *coro) {
+    struct evbag *bag = evbags[fd];
+    struct generic_coro *c = coro;
+    
+    if (bag == NULL) {
+        /* Event already removed */
+        return;
+    }
+    
+    if (c == NULL) {
+        c = &(bag->coro);
+    }
+
+    bag->handler(c, bag->state, fd, events);
+}
+
+
 static int
 evbags_init(unsigned int openmax) {
     evbags_count = 0;
@@ -86,7 +104,6 @@ evbags_deinit() {
     free(evbags);
     evbags = NULL;
 }
-
 
 
 int
@@ -204,14 +221,7 @@ evloop:
         for (i = 0; i < nfds; i++) {
             ee = events[i];
             fd = ee.data.fd;
-            bag = evbags[fd];
-
-            if (bag == NULL) {
-                /* Event already removed */
-                continue;
-            }
-
-            bag->handler(&(bag->coro), bag->state, fd, ee.events);
+            evbag_handle(fd, ee.events, NULL);
         }
     }
 
