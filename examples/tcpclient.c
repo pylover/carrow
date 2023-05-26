@@ -66,7 +66,6 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     int inavail = mrb_available(out);
     int inused = mrb_used(in);
 
-    DEBUG("events: %d fd: %d", events, fd);
     if ((events & EVERR) || (events & EVRDHUP)) {
         return tcpc_coro_reject(self, state, fd, events, __DBG__, "evloop", 
                 fd);
@@ -75,7 +74,6 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     /* stdin read */
     if ((fd == STDIN_FILENO) && outavail) {
         bytes = mrb_readin(out, STDIN_FILENO, outavail);
-        DEBUG("Read stdin: %d", bytes);
         if (bytes == -1) {
             return tcpc_coro_reject(self, state, fd, events, __DBG__, 
                     "read(%d)", fd);
@@ -87,7 +85,6 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     /* stdout write */
     if ((fd == STDOUT_FILENO) && inused) {
         bytes = mrb_writeout(in, STDOUT_FILENO, inused);
-        DEBUG("Write stdout: %d", bytes);
         if (bytes == -1) {
             return tcpc_coro_reject(self, state, fd, events, __DBG__, 
                     "write(%d)", fd);
@@ -99,7 +96,6 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     /* tcp write */
     if ((fd == conn->fd) && outused) {
         bytes = mrb_writeout(out, conn->fd, outused);
-        DEBUG("Write tcp: %d", bytes);
         if ((bytes <= 0) && (!EVMUSTWAIT())) {
             return tcpc_coro_reject(self, state, fd, events, __DBG__, 
                     "write(%d)", fd);
@@ -110,9 +106,7 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
 
     if ((fd == conn->fd) && inavail) {
         /* tcp read */
-        DEBUG("Reading tcp fd: %d", conn->fd);
         bytes = mrb_readin(in, conn->fd, inavail);
-        DEBUG("Read tcp: %d", bytes);
         if ((bytes <= 0) && (!EVMUSTWAIT())) {
             return tcpc_coro_reject(self, state, fd, events, __DBG__, 
                     "read(%d)", conn->fd);
@@ -143,12 +137,10 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     if (outused || inavail) {
         op = EVONESHOT | EVET;
         if (inavail) {
-            DEBUG("Registering tcp for read");
             op |= EVIN;
         }
 
         if (outused) {
-            DEBUG("Registering tcp for write");
             op |= EVOUT;
         }
 
@@ -171,7 +163,6 @@ connectA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
 
     if (errno == EINPROGRESS) {
         errno = 0;
-        DEBUG("reg connect: %d", conn->fd);
         if (tcpc_evloop_register(self, state, conn->fd, EVOUT | EVONESHOT)) {
             goto failed;
         }
@@ -230,7 +221,7 @@ main() {
 
     carrow_init();
    
-    tcpc_coro_create_and_run(connectA, errorA, &state, -1, 0);
+    tcpc_coro_create_and_run(connectA, errorA, &state, -1, -1);
     if (carrow_evloop(&status)) {
         ret = EXIT_FAILURE;
     }

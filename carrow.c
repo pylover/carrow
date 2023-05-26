@@ -217,7 +217,6 @@ evloop:
                 continue;
             }
 
-            DEBUG("evloop: %d %d", fd, ee.events);
             bag->handler(&(bag->coro), bag->state, fd, ee.events);
         }
     }
@@ -230,7 +229,6 @@ terminate:
             continue;
         }
         
-        DEBUG("terminating: %d %p", fd, bag);
         bag->handler(&(bag->coro), bag->state, fd, 0);
     }
 
