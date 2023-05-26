@@ -15,12 +15,6 @@ volatile unsigned int evbags_count;
 static int _epollfd = -1;
 
 
-struct generic_coro {
-    void *resolve;
-    void *reject;
-};
-
-
 struct evbag {
     struct generic_coro coro;
     void *state;

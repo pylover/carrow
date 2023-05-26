@@ -30,6 +30,12 @@
 #define EVWAKEUP  EPOLLWAKEUP
 
 
+struct generic_coro {
+    void *resolve;
+    void *reject;
+};
+
+
 typedef void (*carrow_event_handler) 
     (void *coro, void *state, int efd, int events);
 
