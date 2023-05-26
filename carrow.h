@@ -72,7 +72,7 @@ carrow_evloop(volatile int *status);
 
 
 void
-evbag_handle(int fd, int events, struct generic_coro *coro);
+carrow_evbag_handle(int fd, int events, struct generic_coro *coro);
 
 
 #endif

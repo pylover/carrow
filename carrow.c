@@ -66,7 +66,7 @@ evbag_delete(int fd) {
 
 
 void
-evbag_handle(int fd, int events, struct generic_coro *coro) {
+carrow_evbag_handle(int fd, int events, struct generic_coro *coro) {
     struct evbag *bag = evbags[fd];
     struct generic_coro *c = coro;
     
@@ -221,19 +221,14 @@ evloop:
         for (i = 0; i < nfds; i++) {
             ee = events[i];
             fd = ee.data.fd;
-            evbag_handle(fd, ee.events, NULL);
+            carrow_evbag_handle(fd, ee.events, NULL);
         }
     }
 
 terminate:
 
     for (fd = 0; fd < _openmax; fd++) {
-        bag = evbags[fd];
-        if (bag == NULL) {
-            continue;
-        }
-        
-        bag->handler(&(bag->coro), bag->state, fd, 0);
+        carrow_evbag_handle(fd, 0, NULL);
     }
 
     if (evbags_count && ((status == NULL) || (*status > EXIT_FAILURE))) {
