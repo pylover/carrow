@@ -75,4 +75,9 @@ void
 carrow_evbag_handle(int fd, int events, struct generic_coro *coro);
 
 
+int
+carrow_evbag_unpack(int fd, struct generic_coro *coro, void **state,
+        carrow_event_handler *handler);
+
+
 #endif

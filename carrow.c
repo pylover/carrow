@@ -65,6 +65,23 @@ evbag_delete(int fd) {
 }
 
 
+int
+carrow_evbag_unpack(int fd, struct generic_coro *coro, void **state, 
+        carrow_event_handler *handler) {
+    struct evbag *bag = evbags[fd];
+
+    if (bag == NULL) {
+        return -1;
+    }
+
+    memcpy(coro, &bag->coro, sizeof(struct generic_coro));
+    *state = bag->state;
+    *handler = bag->handler;
+   
+    return 0;
+}
+
+
 void
 carrow_evbag_handle(int fd, int events, struct generic_coro *coro) {
     struct evbag *bag = evbags[fd];
