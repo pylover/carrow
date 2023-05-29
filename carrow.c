@@ -74,9 +74,17 @@ carrow_evbag_unpack(int fd, struct generic_coro *coro, void **state,
         return -1;
     }
 
-    memcpy(coro, &bag->coro, sizeof(struct generic_coro));
-    *state = bag->state;
-    *handler = bag->handler;
+    if (coro != NULL) {
+        memcpy(coro, &bag->coro, sizeof(struct generic_coro));
+    }
+
+    if (state != NULL) {
+        *state = bag->state;
+    }
+
+    if (handler != NULL) {
+        *handler = bag->handler;
+    }
    
     return 0;
 }
