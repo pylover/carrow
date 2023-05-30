@@ -76,4 +76,8 @@ carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state,
         carrow_generic_coro_resolver *handler);
 
 
+void
+carrow_evbag_resolve(int fd, int events, struct carrow_generic_coro *coro);
+
+
 #endif
