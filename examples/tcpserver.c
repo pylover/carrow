@@ -83,7 +83,7 @@ echoA(struct tcpsc_coro *self, struct tcpsc *state, int fd, int events) {
 
     /* tcp read */
     bytes = mrb_readin(buff, conn->fd, avail);
-    if ((bytes <= 0) && (!EVMUSTWAIT())) {
+    if ((bytes <= 0) && (!CMUSTWAIT())) {
         return tcpsc_coro_reject(self, state, __DBG__, 
                 "read(%d)", conn->fd);
     }
@@ -92,7 +92,7 @@ echoA(struct tcpsc_coro *self, struct tcpsc *state, int fd, int events) {
 
     /* tcp write */
     bytes = mrb_writeout(buff, conn->fd, used);
-    if ((bytes <= 0) && (!EVMUSTWAIT())) {
+    if ((bytes <= 0) && (!CMUSTWAIT())) {
         return tcpsc_coro_reject(self, state, __DBG__, 
                 "writeead(%d)", conn->fd);
     }
@@ -104,13 +104,13 @@ echoA(struct tcpsc_coro *self, struct tcpsc *state, int fd, int events) {
     int op;
 
     /* tcp socket */
-    op = EVONESHOT | EVET;
+    op = CONCE | CET;
     if (avail) {
-        op |= EVIN;
+        op |= CIN;
     }
 
     if (used) {
-        op |= EVOUT;
+        op |= COUT;
     }
 
     if (tcpsc_evloop_modify_or_register(self, state, conn->fd, op)) {
@@ -142,10 +142,10 @@ acceptA(struct tcps_coro *self, struct tcps *state, int fd, int events) {
 
     fd = accept4(state->listenfd, &addr, &addrlen, SOCK_NONBLOCK);
     if (fd == -1) {
-        if (EVMUSTWAIT()) {
+        if (CMUSTWAIT()) {
             errno = 0;
             if (tcps_evloop_modify_or_register(self, state, 
-                        state->listenfd, EVIN | EVET)) {
+                        state->listenfd, CIN | CET)) {
                 return tcps_coro_reject(self, state, __DBG__, "tcps_wait");
             }
             return tcps_coro_stop();
@@ -162,8 +162,7 @@ acceptA(struct tcps_coro *self, struct tcps *state, int fd, int events) {
     c->conn.remoteaddr = addr;
     c->buff = mrb_create(BUFFSIZE);
     static struct tcpsc_coro echo = {echoA, connerrorA};
-    if (tcpsc_evloop_register(&echo, c, c->conn.fd, 
-                EVIN | EVOUT | EVONESHOT)) {
+    if (tcpsc_evloop_register(&echo, c, c->conn.fd, CIN | COUT | CONCE)) {
         free(c);
         return tcps_coro_reject(self, state, __DBG__, 
                 "tcpsc_wait");

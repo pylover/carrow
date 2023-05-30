@@ -65,7 +65,7 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     int inavail = mrb_available(out);
     int inused = mrb_used(in);
 
-    if ((events & EVERR) || (events & EVRDHUP)) {
+    if ((events & CERR) || (events & CRDHUP)) {
         return tcpc_coro_reject(self, state, __DBG__, "evloop", fd);
     }
 
@@ -92,7 +92,7 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     /* tcp write */
     if ((fd == conn->fd) && outused) {
         bytes = mrb_writeout(out, conn->fd, outused);
-        if ((bytes <= 0) && (!EVMUSTWAIT())) {
+        if ((bytes <= 0) && (!CMUSTWAIT())) {
             return tcpc_coro_reject(self, state, __DBG__, "write(%d)", fd);
         }
         outused -= bytes;
@@ -102,7 +102,7 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     if ((fd == conn->fd) && inavail) {
         /* tcp read */
         bytes = mrb_readin(in, conn->fd, inavail);
-        if ((bytes <= 0) && (!EVMUSTWAIT())) {
+        if ((bytes <= 0) && (!CMUSTWAIT())) {
             return tcpc_coro_reject(self, state, __DBG__, 
                     "read(%d)", conn->fd);
         }
@@ -116,27 +116,27 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
 
     /* stdin */
     if (outavail && tcpc_evloop_modify_or_register(self, state, STDIN_FILENO, 
-                EVIN | EVONESHOT | EVET)) {
+                CIN | CONCE | CET)) {
         return tcpc_coro_reject(self, state, __DBG__, "wait(%d)", 
                 STDIN_FILENO);
     }
 
     /* stdout */
     if (inused && tcpc_evloop_modify_or_register(self, state, STDOUT_FILENO, 
-                EVOUT | EVONESHOT | EVET)) {
+                COUT | CONCE | CET)) {
         return tcpc_coro_reject(self, state, __DBG__, "wait(%d)", 
                 STDOUT_FILENO);
     }
 
     /* tcp socket */
     if (outused || inavail) {
-        op = EVONESHOT | EVET;
+        op = CONCE | CET;
         if (inavail) {
-            op |= EVIN;
+            op |= CIN;
         }
 
         if (outused) {
-            op |= EVOUT;
+            op |= COUT;
         }
 
         if (tcpc_evloop_modify_or_register(self, state, conn->fd, op)) {
@@ -158,7 +158,7 @@ connectA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
 
     if (errno == EINPROGRESS) {
         errno = 0;
-        if (tcpc_evloop_register(self, state, conn->fd, EVOUT | EVONESHOT)) {
+        if (tcpc_evloop_register(self, state, conn->fd, COUT | CONCE)) {
             goto failed;
         }
 

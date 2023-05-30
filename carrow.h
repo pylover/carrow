@@ -18,17 +18,17 @@
     errno, __FILENAME__, __LINE__, __FUNCTION__
 
 
-#define EVMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK) \
+#define CMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK) \
         || (errno == EINPROGRESS))
-#define EVIN      EPOLLIN
-#define EVOUT     EPOLLOUT
-#define EVET      EPOLLET
-#define EVONESHOT EPOLLONESHOT
-#define EVRDHUP   EPOLLRDHUP
-#define EVPRI     EPOLLPRI
-#define EVERR     EPOLLERR
-#define EVHUP     EPOLLHUP
-#define EVWAKEUP  EPOLLWAKEUP
+#define CIN      EPOLLIN
+#define COUT     EPOLLOUT
+#define CET      EPOLLET
+#define CONCE    EPOLLONESHOT
+#define CRDHUP   EPOLLRDHUP
+#define CPRI     EPOLLPRI
+#define CERR     EPOLLERR
+#define CHUP     EPOLLHUP
+#define CWAKEUP  EPOLLWAKEUP
 
 
 struct carrow_generic_coro {

@@ -47,12 +47,12 @@ hitA(struct timer_coro *self, struct timer *state, int fd, int events) {
     }
 
     if (bytes == -1) {
-        if (!EVMUSTWAIT()) {
+        if (!CMUSTWAIT()) {
             return timer_coro_reject(self, state, __DBG__, "read");
         }
 
         if (timer_evloop_modify_or_register(self, state, state->fd, 
-                    EVIN | EVONESHOT)) {
+                    CIN | CONCE)) {
             return timer_coro_reject(self, state, __DBG__, "timer_wait");
         }
         return timer_coro_stop();
