@@ -15,8 +15,7 @@ typedef CARROW_NAME(coro) (*CARROW_NAME(coro_resolver))
 
 
 typedef CARROW_NAME(coro) (*CARROW_NAME(coro_rejector)) 
-    (CARROW_NAME(coro) *self, CARROW_ENTITY *state, int no, int efd, 
-     int events);
+    (CARROW_NAME(coro) *self, CARROW_ENTITY *state, int no);
 
 
 struct CARROW_NAME(coro) {
@@ -44,9 +43,9 @@ CARROW_NAME(coro_stop) ();
 
 
 CARROW_NAME(coro)
-CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int fd,
-        int events, int no, const char *filename, int lineno, 
-        const char *function, const char *format, ... );
+CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int no, 
+        const char *filename, int lineno, const char *function, 
+        const char *format, ... );
 
 
 void

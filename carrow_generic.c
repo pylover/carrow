@@ -27,9 +27,9 @@ CARROW_NAME(coro_stop) () {
 
 
 CARROW_NAME(coro)
-CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int fd,
-        int events, int no, const char *filename, int lineno, 
-        const char *function, const char *format, ... ) {
+CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int no, 
+        const char *filename, int lineno, const char *function, 
+        const char *format, ... ) {
     va_list args;
 
     if (format) { 
@@ -51,7 +51,7 @@ CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int fd,
     }
    
     if (self->reject != NULL) {
-        return self->reject(self, s, fd, events, no);
+        return self->reject(self, s, no);
     }
 
     errno = 0;
@@ -65,7 +65,9 @@ CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int efd,
     CARROW_NAME(coro) c = *self;
    
     while (c.resolve != NULL) {
+        // TODO: any 
         c = c.resolve(&c, s, efd, events);
+        // TODO: any 
     }
 }
 

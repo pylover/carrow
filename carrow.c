@@ -91,7 +91,7 @@ carrow_evbag_unpack(int fd, struct generic_coro *coro, void **state,
 
 
 void
-carrow_evbag_handle(int fd, int events, struct generic_coro *coro) {
+carrow_evbag_resolve(int fd, int events, struct generic_coro *coro) {
     struct evbag *bag = evbags[fd];
     struct generic_coro *c = coro;
     
@@ -246,14 +246,14 @@ evloop:
         for (i = 0; i < nfds; i++) {
             ee = events[i];
             fd = ee.data.fd;
-            carrow_evbag_handle(fd, ee.events, NULL);
+            carrow_evbag_resolve(fd, ee.events, NULL);
         }
     }
 
 terminate:
 
     for (fd = 0; fd < _openmax; fd++) {
-        carrow_evbag_handle(fd, 0, NULL);
+        carrow_evbag_resolve(fd, 0, NULL);
     }
 
     if (evbags_count && ((status == NULL) || (*status > EXIT_FAILURE))) {

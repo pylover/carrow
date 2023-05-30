@@ -25,8 +25,7 @@ static struct sigaction old_action;
 
 
 struct timer_coro 
-errorA(struct timer_coro *self, struct timer *state, int fd, int events, 
-        int no) {
+errorA(struct timer_coro *self, struct timer *state, int no) {
     if (state->fd != -1) {
         timer_evloop_unregister(state->fd);
         close(state->fd);
@@ -40,25 +39,21 @@ hitA(struct timer_coro *self, struct timer *state, int fd, int events) {
     unsigned long value;
 
     if (events == 0) {
-        return timer_coro_reject(self, state, fd, events, __DBG__, 
-                "terminating");
+        return timer_coro_reject(self, state, __DBG__, "terminating");
     }
     ssize_t bytes = read(state->fd, &value, sizeof(value));
     if (bytes == 0) {
-        return timer_coro_reject(self, state, fd, events, __DBG__, 
-                "read: EOF");
+        return timer_coro_reject(self, state, __DBG__, "read: EOF");
     }
 
     if (bytes == -1) {
         if (!EVMUSTWAIT()) {
-            return timer_coro_reject(self, state, fd, events, __DBG__, 
-                    "read");
+            return timer_coro_reject(self, state, __DBG__, "read");
         }
 
         if (timer_evloop_modify_or_register(self, state, state->fd, 
                     EVIN | EVONESHOT)) {
-            return timer_coro_reject(self, state, fd, events, __DBG__, 
-                    "timer_wait");
+            return timer_coro_reject(self, state, __DBG__, "timer_wait");
         }
         return timer_coro_stop();
     }
@@ -73,16 +68,14 @@ struct timer_coro
 timerA(struct timer_coro *self, struct timer *state, int fd, int events) {
     fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
     if (fd == -1) {
-        return timer_coro_reject(self, state, fd, events, __DBG__, 
-                "timerfd_create");
+        return timer_coro_reject(self, state, __DBG__, "timerfd_create");
     }
 
     state->fd = fd;
     struct timespec sec1 = {1, 0};
     struct itimerspec spec = {sec1, sec1};
     if (timerfd_settime(fd, 0, &spec, NULL) == -1) {
-        return timer_coro_reject(self, state, fd, events, __DBG__, 
-                "timerfd_settime");
+        return timer_coro_reject(self, state, __DBG__, "timerfd_settime");
     }
     
     return timer_coro_create_from(self, hitA);

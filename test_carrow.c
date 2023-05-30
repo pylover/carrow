@@ -20,7 +20,7 @@ barA(struct foo_coro *self, struct foo *s, int efd, int events);
 
 
 struct foo_coro
-errorA(struct foo_coro *self, struct foo *s, int no, int efd, int events) {
+errorA(struct foo_coro *self, struct foo *s, int no) {
     return foo_coro_stop();
 }
 
@@ -28,7 +28,7 @@ errorA(struct foo_coro *self, struct foo *s, int no, int efd, int events) {
 struct foo_coro
 fooA(struct foo_coro *self, struct foo *s, int efd, int events) {
     if (s->all >= 10) {
-        return foo_coro_reject(self, s, -1, -1, __DBG__, "All done");
+        return foo_coro_reject(self, s, __DBG__, "All done");
     }
     s->foo++;
     s->all++;
