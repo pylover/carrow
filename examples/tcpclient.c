@@ -210,7 +210,7 @@ main() {
         return EXIT_FAILURE;
     }
 
-    tcpc_forever(connectA, errorA, &state, &status);
+    ret = tcpc_forever(connectA, errorA, &state, &status);
     if (mrb_destroy(state.inbuff) || mrb_destroy(state.outbuff)) {
         ERROR("Cannot dispose buffers.");
         ret = EXIT_FAILURE;

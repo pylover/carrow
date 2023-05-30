@@ -201,7 +201,6 @@ catch_signal() {
 
 int
 main() {
-    int ret = EXIT_SUCCESS;
     clog_verbosity = CLOG_DEBUG;
 
     /* Signal */
@@ -213,6 +212,5 @@ main() {
         .listenfd = -1,
     };
     
-    tcps_forever(listenA, errorA, &state, &status);
-    return ret;
+    return tcps_forever(listenA, errorA, &state, &status);
 }
