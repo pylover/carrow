@@ -21,7 +21,6 @@ struct evbag {
 };
 
 
-
 #define EVBAG_HAS(fd) (_evbags[fd] != NULL)
 #define EVBAG_ISNULL(fd) (_evbags[fd] == NULL)
 
@@ -44,10 +43,10 @@ evbag_set(int fd, struct carrow_generic_coro *coro, void *state,
         _evbags[fd] = bag;
         _evbagscount++;
     }
+
     bag->coro = *coro;
     bag->state = state;
     bag->handler = handler;
-
     return 0;
 }
 
