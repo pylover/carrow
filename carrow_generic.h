@@ -79,4 +79,10 @@ int
 CARROW_NAME(evloop_unregister) (int fd);
 
 
+int
+CARROW_NAME(forever) (CARROW_NAME(coro_resolver) resolve, 
+        CARROW_NAME(coro_rejector) reject, CARROW_ENTITY *state, 
+        volatile int *status);
+
+
 #endif
