@@ -122,7 +122,6 @@ static int
 evbags_init() {
     _evbagscount = 0;
     _evbags = calloc(_openmax, sizeof(struct evbag*));
-    
     if (_evbags == NULL) {
         errno = ENOMEM;
         ERROR("Out of memory: %u", _openmax);

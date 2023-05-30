@@ -3,6 +3,7 @@
 
 
 #include <stdbool.h>
+#include <errno.h>
 #include <sys/epoll.h>
 
 

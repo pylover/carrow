@@ -3,6 +3,8 @@
 #include <clog.h>
 
 #include <stdarg.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <errno.h>
 
 
@@ -27,8 +29,8 @@ CARROW_NAME(coro_stop) () {
 
 
 CARROW_NAME(coro)
-CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int no, 
-        const char *filename, int lineno, const char *function, 
+CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, 
+        int errorno, const char *filename, int lineno, const char *function, 
         const char *format, ... ) {
     va_list args;
 
@@ -51,7 +53,7 @@ CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int no,
     }
    
     if (self->reject != NULL) {
-        return self->reject(self, s, no);
+        return self->reject(self, s, errorno);
     }
 
     errno = 0;
@@ -124,6 +126,5 @@ CARROW_NAME(forever) (CARROW_NAME(coro_resolver) resolve,
     }
     
     carrow_deinit();
-
     return ret;
 }

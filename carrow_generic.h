@@ -5,6 +5,7 @@
     "carrow_generic.h"
 #else
 
+
 #include <stdbool.h>
 
 
@@ -16,7 +17,7 @@ typedef CARROW_NAME(coro) (*CARROW_NAME(coro_resolver))
 
 
 typedef CARROW_NAME(coro) (*CARROW_NAME(coro_rejector)) 
-    (CARROW_NAME(coro) *self, CARROW_ENTITY *state, int no);
+    (CARROW_NAME(coro) *self, CARROW_ENTITY *state, int errorno);
 
 
 struct CARROW_NAME(coro) {
@@ -44,8 +45,8 @@ CARROW_NAME(coro_stop) ();
 
 
 CARROW_NAME(coro)
-CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int no, 
-        const char *filename, int lineno, const char *function, 
+CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, 
+        int errorno, const char *filename, int lineno, const char *function, 
         const char *format, ... );
 
 
