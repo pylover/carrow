@@ -60,13 +60,13 @@ CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int no,
 
 
 void
-CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int efd, 
+CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int fd, 
         int events) {
     CARROW_NAME(coro) c = *self;
    
     while (c.resolve != NULL) {
         // TODO: any 
-        c = c.resolve(&c, s, efd, events);
+        c = c.resolve(&c, s, fd, events);
         // TODO: any 
     }
 }
@@ -81,18 +81,11 @@ CARROW_NAME(coro_create_and_run) (CARROW_NAME(coro_resolver) f,
 }
 
 
-static void
-CARROW_NAME(event_handler) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, 
-        int efd, int events) {
-    CARROW_NAME(coro_run) (self, s, efd, events);
-}
-
-
 int
 CARROW_NAME(evloop_register) (CARROW_NAME(coro) *c, CARROW_ENTITY *s, int fd, 
         int events) {
     return carrow_evloop_register(c, s, fd, events,
-            (carrow_event_handler)CARROW_NAME(event_handler));
+            (carrow_generic_coro_resolver)CARROW_NAME(coro_run));
 }
 
 
@@ -100,7 +93,7 @@ int
 CARROW_NAME(evloop_modify) (CARROW_NAME(coro) *c, CARROW_ENTITY *s, int fd, 
         int events) {
     return carrow_evloop_modify(c, s, fd, events,
-            (carrow_event_handler)CARROW_NAME(event_handler));
+            (carrow_generic_coro_resolver)CARROW_NAME(coro_run));
 }
 
 
@@ -108,7 +101,7 @@ int
 CARROW_NAME(evloop_modify_or_register) (CARROW_NAME(coro) *c, 
         CARROW_ENTITY *s, int fd, int events) {
     return carrow_evloop_modify_or_register(c, s, fd, events,
-            (carrow_event_handler)CARROW_NAME(event_handler));
+            (carrow_generic_coro_resolver)CARROW_NAME(coro_run));
 }
 
 

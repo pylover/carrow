@@ -1,5 +1,6 @@
 #ifndef CARROW_H
-#error "carrow.h must be imported before importing the carrow_generic.h"
+#error "carrow.h and clog.h must be imported before importing the" \
+    "carrow_generic.h"
 #error "And also #undef and #define CARROW_ENTITY before importing the " \
     "carrow_generic.h"
 #else
@@ -11,7 +12,7 @@ typedef struct CARROW_NAME(coro) CARROW_NAME(coro);
 
 
 typedef CARROW_NAME(coro) (*CARROW_NAME(coro_resolver)) 
-    (CARROW_NAME(coro) *self, CARROW_ENTITY *state, int efd, int events);
+    (CARROW_NAME(coro) *self, CARROW_ENTITY *state, int fd, int events);
 
 
 typedef CARROW_NAME(coro) (*CARROW_NAME(coro_rejector)) 
@@ -49,7 +50,7 @@ CARROW_NAME(coro_reject) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int no,
 
 
 void
-CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int efd, 
+CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int fd, 
         int events);
 
 

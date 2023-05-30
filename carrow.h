@@ -14,7 +14,8 @@
 
 #define __FILENAME__ \
     (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#define __DBG__ errno, __FILENAME__, __LINE__, __FUNCTION__
+#define __DBG__ \
+    errno, __FILENAME__, __LINE__, __FUNCTION__
 
 
 #define EVMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK) \
@@ -30,14 +31,14 @@
 #define EVWAKEUP  EPOLLWAKEUP
 
 
-struct generic_coro {
+struct carrow_generic_coro {
     void *resolve;
     void *reject;
 };
 
 
-typedef void (*carrow_event_handler) 
-    (void *coro, void *state, int efd, int events);
+typedef void (*carrow_generic_coro_resolver) 
+    (void *coro, void *state, int fd, int events);
 
 
 int
@@ -49,18 +50,18 @@ carrow_deinit();
 
 
 int
-carrow_evloop_register(void *coro, void *state, int efd, int events, 
-        carrow_event_handler handler);
+carrow_evloop_register(void *coro, void *state, int fd, int events, 
+        carrow_generic_coro_resolver handler);
 
 
 int
-carrow_evloop_modify(void *c, void *state, int efd, int events, 
-        carrow_event_handler handler);
+carrow_evloop_modify(void *c, void *state, int fd, int events, 
+        carrow_generic_coro_resolver handler);
 
 
 int
 carrow_evloop_modify_or_register(void *coro, void *state, int fd, int events, 
-        carrow_event_handler handler);
+        carrow_generic_coro_resolver handler);
 
 
 int
@@ -72,12 +73,12 @@ carrow_evloop(volatile int *status);
 
 
 void
-carrow_evbag_handle(int fd, int events, struct generic_coro *coro);
+carrow_evbag_handle(int fd, int events, struct carrow_generic_coro *coro);
 
 
 int
-carrow_evbag_unpack(int fd, struct generic_coro *coro, void **state,
-        carrow_event_handler *handler);
+carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state,
+        carrow_generic_coro_resolver *handler);
 
 
 #endif

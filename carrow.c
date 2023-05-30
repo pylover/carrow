@@ -8,29 +8,31 @@
 #include <sys/epoll.h>
 
 
-#define EVCHUNK     128
 static unsigned int _openmax;
-static struct evbag **evbags;
-volatile unsigned int evbags_count;
+static struct evbag **_evbags;
+volatile unsigned int _evbagscount;
 static int _epollfd = -1;
 
 
 struct evbag {
-    struct generic_coro coro;
+    struct carrow_generic_coro coro;
     void *state;
-    carrow_event_handler handler;
+    carrow_generic_coro_resolver handler;
 };
 
 
 
-#define evbag_has(fd) (evbags[fd] != NULL)
-#define evbag_isnull(fd) (evbags[fd] == NULL)
+#define EVBAG_HAS(fd) (_evbags[fd] != NULL)
+#define EVBAG_ISNULL(fd) (_evbags[fd] == NULL)
 
 
 static int
-evbag_set(int fd, struct generic_coro *coro, void *state,
-        carrow_event_handler handler) {
-    struct evbag *bag = evbags[fd];
+evbag_set(int fd, struct carrow_generic_coro *coro, void *state,
+        carrow_generic_coro_resolver handler) {
+    if (fd >= _openmax) {
+        return -1;
+    }
+    struct evbag *bag = _evbags[fd];
 
     if (bag == NULL) {
         bag = malloc(sizeof(struct evbag));
@@ -39,8 +41,8 @@ evbag_set(int fd, struct generic_coro *coro, void *state,
             errno = ENOMEM;
             return -1;
         }
-        evbags[fd] = bag;
-        evbags_count++;
+        _evbags[fd] = bag;
+        _evbagscount++;
     }
     bag->coro = *coro;
     bag->state = state;
@@ -52,30 +54,36 @@ evbag_set(int fd, struct generic_coro *coro, void *state,
 
 static int
 evbag_delete(int fd) {
-    struct evbag *bag = evbags[fd];
+    if (fd >= _openmax) {
+        return -1;
+    }
+    struct evbag *bag = _evbags[fd];
 
     if (bag == NULL) {
         return -1;
     }
     
     free(bag);
-    evbags_count--;
-    evbags[fd] = NULL; 
+    _evbagscount--;
+    _evbags[fd] = NULL; 
     return 0;
 }
 
 
 int
-carrow_evbag_unpack(int fd, struct generic_coro *coro, void **state, 
-        carrow_event_handler *handler) {
-    struct evbag *bag = evbags[fd];
+carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state, 
+        carrow_generic_coro_resolver *handler) {
+    if (fd >= _openmax) {
+        return -1;
+    }
+    struct evbag *bag = _evbags[fd];
 
     if (bag == NULL) {
         return -1;
     }
 
     if (coro != NULL) {
-        memcpy(coro, &bag->coro, sizeof(struct generic_coro));
+        memcpy(coro, &bag->coro, sizeof(struct carrow_generic_coro));
     }
 
     if (state != NULL) {
@@ -91,9 +99,12 @@ carrow_evbag_unpack(int fd, struct generic_coro *coro, void **state,
 
 
 void
-carrow_evbag_resolve(int fd, int events, struct generic_coro *coro) {
-    struct evbag *bag = evbags[fd];
-    struct generic_coro *c = coro;
+carrow_evbag_resolve(int fd, int events, struct carrow_generic_coro *coro) {
+    if (fd >= _openmax) {
+        return;
+    }
+    struct evbag *bag = _evbags[fd];
+    struct carrow_generic_coro *c = coro;
     
     if (bag == NULL) {
         /* Event already removed */
@@ -109,40 +120,45 @@ carrow_evbag_resolve(int fd, int events, struct generic_coro *coro) {
 
 
 static int
-evbags_init(unsigned int openmax) {
-    evbags_count = 0;
-    evbags = calloc(openmax, sizeof(struct evbag*));
+evbags_init() {
+    _evbagscount = 0;
+    _evbags = calloc(_openmax, sizeof(struct evbag*));
     
-    if (evbags == NULL) {
+    if (_evbags == NULL) {
         errno = ENOMEM;
         ERROR("Out of memory");
         return -1;
     }
     
-    memset(evbags, 0, sizeof(struct evbag*) * openmax);
+    memset(_evbags, 0, sizeof(struct evbag*) * _openmax);
     return 0;
 }
 
 
 static void
 evbags_deinit() {
-    free(evbags);
-    evbags = NULL;
+    free(_evbags);
+    _evbags = NULL;
 }
 
 
 int
-carrow_init() {
+carrow_init(unsigned int openmax) {
     if (_epollfd != -1 ) {
         ERROR("Carrow event loop already initialized.");
         return -1;
     }
    
     /* Find maximum allowed openfiles */
-    _openmax = sysconf(_SC_OPEN_MAX);
-    if (_openmax == -1) {
-        ERROR("Cannot get maximum allowed openfiles for this process.");
-        return -1;
+    if (openmax > 0) {
+        _openmax = openmax;
+    }
+    else {
+        _openmax = sysconf(_SC_OPEN_MAX);
+        if (_openmax == -1) {
+            ERROR("Cannot get maximum allowed openfiles for this process.");
+            return -1;
+        }
     }
     evbags_init(_openmax);
 
@@ -157,14 +173,14 @@ carrow_init() {
 
 int
 carrow_evloop_register(void *coro, void *state, int fd, int events, 
-        carrow_event_handler handler) {
+        carrow_generic_coro_resolver handler) {
     struct epoll_event ee;
 
-    if (evbag_has(fd)) {
+    if (EVBAG_HAS(fd)) {
         return -1;
     }
 
-    evbag_set(fd, (struct generic_coro*)coro, state, handler);
+    evbag_set(fd, (struct carrow_generic_coro*)coro, state, handler);
     ee.events = events;
     ee.data.fd = fd;
     if (epoll_ctl(_epollfd, EPOLL_CTL_ADD, fd, &ee)) {
@@ -178,10 +194,10 @@ carrow_evloop_register(void *coro, void *state, int fd, int events,
 
 int
 carrow_evloop_modify(void *coro, void *state, int fd, int events, 
-        carrow_event_handler handler) {
+        carrow_generic_coro_resolver handler) {
     struct epoll_event ee;
    
-    if (evbag_isnull(fd)) {
+    if (EVBAG_ISNULL(fd)) {
         return -1;
     }
 
@@ -202,9 +218,9 @@ carrow_evloop_modify(void *coro, void *state, int fd, int events,
 
 int
 carrow_evloop_modify_or_register(void *coro, void *state, int fd, int events, 
-        carrow_event_handler handler) {
+        carrow_generic_coro_resolver handler) {
     
-    if (evbag_isnull(fd)) {
+    if (EVBAG_ISNULL(fd)) {
         return carrow_evloop_register(coro, state, fd, events, handler);
     }
     
@@ -227,12 +243,12 @@ carrow_evloop(volatile int *status) {
     int ret = 0;
     struct evbag *bag;
     struct epoll_event ee;
-    struct epoll_event events[EVCHUNK];
+    struct epoll_event events[_openmax];
 
 evloop:
-    while (evbags_count && ((status == NULL) || (*status > EXIT_FAILURE))) {
+    while (_evbagscount && ((status == NULL) || (*status > EXIT_FAILURE))) {
         errno = 0;
-        nfds = epoll_wait(_epollfd, events, EVCHUNK, -1);
+        nfds = epoll_wait(_epollfd, events, _openmax, -1);
         if (nfds < 0) {
             ret = -1;
             break;
@@ -255,7 +271,7 @@ terminate:
         carrow_evbag_resolve(fd, 0, NULL);
     }
 
-    if (evbags_count && ((status == NULL) || (*status > EXIT_FAILURE))) {
+    if (_evbagscount && ((status == NULL) || (*status > EXIT_FAILURE))) {
         goto evloop;
     }
 
