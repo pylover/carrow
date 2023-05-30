@@ -251,7 +251,6 @@ evloop:
     }
 
 terminate:
-
     for (fd = 0; fd < _openmax; fd++) {
         carrow_evbag_resolve(fd, 0, NULL);
     }
