@@ -39,21 +39,21 @@ hitA(struct timer_coro *self, struct timer *state, int fd, int events) {
     unsigned long value;
 
     if (events == 0) {
-        return timer_coro_reject(self, state, __DBG__, "terminating");
+        return timer_coro_reject(self, state, CDBG, "terminating");
     }
     ssize_t bytes = read(state->fd, &value, sizeof(value));
     if (bytes == 0) {
-        return timer_coro_reject(self, state, __DBG__, "read: EOF");
+        return timer_coro_reject(self, state, CDBG, "read: EOF");
     }
 
     if (bytes == -1) {
         if (!CMUSTWAIT()) {
-            return timer_coro_reject(self, state, __DBG__, "read");
+            return timer_coro_reject(self, state, CDBG, "read");
         }
 
         if (timer_evloop_modify_or_register(self, state, state->fd, 
                     CIN | CONCE)) {
-            return timer_coro_reject(self, state, __DBG__, "timer_wait");
+            return timer_coro_reject(self, state, CDBG, "timer_wait");
         }
         return timer_coro_stop();
     }
@@ -68,14 +68,14 @@ struct timer_coro
 timerA(struct timer_coro *self, struct timer *state, int fd, int events) {
     fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
     if (fd == -1) {
-        return timer_coro_reject(self, state, __DBG__, "timerfd_create");
+        return timer_coro_reject(self, state, CDBG, "timerfd_create");
     }
 
     state->fd = fd;
     struct timespec sec1 = {1, 0};
     struct itimerspec spec = {sec1, sec1};
     if (timerfd_settime(fd, 0, &spec, NULL) == -1) {
-        return timer_coro_reject(self, state, __DBG__, "timerfd_settime");
+        return timer_coro_reject(self, state, CDBG, "timerfd_settime");
     }
     
     return timer_coro_create_from(self, hitA);
@@ -98,7 +98,6 @@ void catch_signal() {
 
 int
 main() {
-    int ret = EXIT_SUCCESS;
     clog_verbosity = CLOG_DEBUG;
 
     /* Signal */
@@ -109,13 +108,5 @@ main() {
         .fd = -1,
     };
     
-    carrow_init();
-
-    timer_coro_create_and_run(timerA, errorA, &state, -1, -1);
-    if (carrow_evloop(&status)) {
-        ret = EXIT_FAILURE;
-    }
-    
-    carrow_deinit();
-    return ret;
+    return timer_forever(timerA, errorA, &state, &status);
 }

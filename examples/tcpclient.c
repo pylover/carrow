@@ -66,14 +66,14 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     int inused = mrb_used(in);
 
     if ((events & CERR) || (events & CRDHUP)) {
-        return tcpc_coro_reject(self, state, __DBG__, "evloop", fd);
+        return tcpc_coro_reject(self, state, CDBG, "evloop", fd);
     }
 
     /* stdin read */
     if ((fd == STDIN_FILENO) && outavail) {
         bytes = mrb_readin(out, STDIN_FILENO, outavail);
         if (bytes == -1) {
-            return tcpc_coro_reject(self, state, __DBG__, "read(%d)", fd);
+            return tcpc_coro_reject(self, state, CDBG, "read(%d)", fd);
         }
         outavail -= bytes;
         outused += bytes;
@@ -83,7 +83,7 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     if ((fd == STDOUT_FILENO) && inused) {
         bytes = mrb_writeout(in, STDOUT_FILENO, inused);
         if (bytes == -1) {
-            return tcpc_coro_reject(self, state, __DBG__, "write(%d)", fd);
+            return tcpc_coro_reject(self, state, CDBG, "write(%d)", fd);
         }
         inused -= bytes;
         inavail += bytes;
@@ -93,7 +93,7 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     if ((fd == conn->fd) && outused) {
         bytes = mrb_writeout(out, conn->fd, outused);
         if ((bytes <= 0) && (!CMUSTWAIT())) {
-            return tcpc_coro_reject(self, state, __DBG__, "write(%d)", fd);
+            return tcpc_coro_reject(self, state, CDBG, "write(%d)", fd);
         }
         outused -= bytes;
         outavail += bytes;
@@ -103,8 +103,7 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
         /* tcp read */
         bytes = mrb_readin(in, conn->fd, inavail);
         if ((bytes <= 0) && (!CMUSTWAIT())) {
-            return tcpc_coro_reject(self, state, __DBG__, 
-                    "read(%d)", conn->fd);
+            return tcpc_coro_reject(self, state, CDBG, "read(%d)", conn->fd);
         }
         inavail -= bytes;
         inused += bytes;
@@ -117,15 +116,13 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     /* stdin */
     if (outavail && tcpc_evloop_modify_or_register(self, state, STDIN_FILENO, 
                 CIN | CONCE | CET)) {
-        return tcpc_coro_reject(self, state, __DBG__, "wait(%d)", 
-                STDIN_FILENO);
+        return tcpc_coro_reject(self, state, CDBG, "wait(%d)", STDIN_FILENO);
     }
 
     /* stdout */
     if (inused && tcpc_evloop_modify_or_register(self, state, STDOUT_FILENO, 
                 COUT | CONCE | CET)) {
-        return tcpc_coro_reject(self, state, __DBG__, "wait(%d)", 
-                STDOUT_FILENO);
+        return tcpc_coro_reject(self, state, CDBG, "wait(%d)", STDOUT_FILENO);
     }
 
     /* tcp socket */
@@ -140,8 +137,7 @@ ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
         }
 
         if (tcpc_evloop_modify_or_register(self, state, conn->fd, op)) {
-            return tcpc_coro_reject(self, state, __DBG__, 
-                    "wait(%d)", fd);
+            return tcpc_coro_reject(self, state, CDBG, "wait(%d)", fd);
         }
     }
     
@@ -168,8 +164,8 @@ connectA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
     return tcpc_coro_create_from(self, ioA);
 
 failed:
-    return tcpc_coro_reject(self, state, __DBG__, 
-            "tcp_connect(%s:%s)", state->hostname, state->port);
+    return tcpc_coro_reject(self, state, CDBG, "tcp_connect(%s:%s)", 
+            state->hostname, state->port);
 }
 
 
@@ -214,14 +210,7 @@ main() {
         return EXIT_FAILURE;
     }
 
-    carrow_init();
-   
-    tcpc_coro_create_and_run(connectA, errorA, &state, -1, -1);
-    if (carrow_evloop(&status)) {
-        ret = EXIT_FAILURE;
-    }
-
-    carrow_deinit();
+    tcpc_forever(connectA, errorA, &state, &status);
     if (mrb_destroy(state.inbuff) || mrb_destroy(state.outbuff)) {
         ERROR("Cannot dispose buffers.");
         ret = EXIT_FAILURE;

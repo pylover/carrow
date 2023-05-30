@@ -14,10 +14,9 @@
 
 #define __FILENAME__ \
     (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#define __DBG__ \
-    errno, __FILENAME__, __LINE__, __FUNCTION__
 
 
+#define CDBG errno, __FILENAME__, __LINE__, __FUNCTION__
 #define CMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK) \
         || (errno == EINPROGRESS))
 #define CIN      EPOLLIN
@@ -42,7 +41,7 @@ typedef void (*carrow_generic_coro_resolver)
 
 
 int
-carrow_init();
+carrow_init(unsigned int openmax);
 
 
 void
@@ -70,10 +69,6 @@ carrow_evloop_unregister(int fd);
 
 int
 carrow_evloop(volatile int *status);
-
-
-void
-carrow_evbag_handle(int fd, int events, struct carrow_generic_coro *coro);
 
 
 int

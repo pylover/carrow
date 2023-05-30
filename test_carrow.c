@@ -28,7 +28,7 @@ errorA(struct foo_coro *self, struct foo *s, int no) {
 struct foo_coro
 fooA(struct foo_coro *self, struct foo *s, int efd, int events) {
     if (s->all >= 10) {
-        return foo_coro_reject(self, s, __DBG__, "All done");
+        return foo_coro_reject(self, s, CDBG, "All done");
     }
     s->foo++;
     s->all++;

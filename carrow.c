@@ -126,7 +126,7 @@ evbags_init() {
     
     if (_evbags == NULL) {
         errno = ENOMEM;
-        ERROR("Out of memory");
+        ERROR("Out of memory: %u", _openmax);
         return -1;
     }
     
@@ -150,7 +150,7 @@ carrow_init(unsigned int openmax) {
     }
    
     /* Find maximum allowed openfiles */
-    if (openmax > 0) {
+    if (openmax != 0) {
         _openmax = openmax;
     }
     else {

@@ -109,3 +109,21 @@ int
 CARROW_NAME(evloop_unregister) (int fd) {
     return carrow_evloop_unregister(fd);
 }
+
+
+int
+CARROW_NAME(forever) (CARROW_NAME(coro_resolver) resolve, 
+        CARROW_NAME(coro_rejector) reject, CARROW_ENTITY *state, 
+        volatile int *status) {
+    int ret = EXIT_SUCCESS;
+
+    carrow_init(0);
+    CARROW_NAME(coro_create_and_run) (resolve, reject, state, -1, -1);
+    if (carrow_evloop(status)) {
+        ret = EXIT_FAILURE;
+    }
+    
+    carrow_deinit();
+
+    return ret;
+}

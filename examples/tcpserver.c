@@ -84,8 +84,7 @@ echoA(struct tcpsc_coro *self, struct tcpsc *state, int fd, int events) {
     /* tcp read */
     bytes = mrb_readin(buff, conn->fd, avail);
     if ((bytes <= 0) && (!CMUSTWAIT())) {
-        return tcpsc_coro_reject(self, state, __DBG__, 
-                "read(%d)", conn->fd);
+        return tcpsc_coro_reject(self, state, CDBG, "read(%d)", conn->fd);
     }
     avail -= bytes;
     used += bytes;
@@ -93,8 +92,7 @@ echoA(struct tcpsc_coro *self, struct tcpsc *state, int fd, int events) {
     /* tcp write */
     bytes = mrb_writeout(buff, conn->fd, used);
     if ((bytes <= 0) && (!CMUSTWAIT())) {
-        return tcpsc_coro_reject(self, state, __DBG__, 
-                "writeead(%d)", conn->fd);
+        return tcpsc_coro_reject(self, state, CDBG, "writeout(%d)", conn->fd);
     }
     used -= bytes;
     avail += bytes;
@@ -114,8 +112,7 @@ echoA(struct tcpsc_coro *self, struct tcpsc *state, int fd, int events) {
     }
 
     if (tcpsc_evloop_modify_or_register(self, state, conn->fd, op)) {
-        return tcpsc_coro_reject(self, state, __DBG__, 
-                "wait(%d)", fd);
+        return tcpsc_coro_reject(self, state, CDBG, "wait(%d)", fd);
     }
 
     return tcpsc_coro_stop();
@@ -137,7 +134,7 @@ acceptA(struct tcps_coro *self, struct tcps *state, int fd, int events) {
     
     if (events == 0) {
         /* Terminating */
-        return tcps_coro_reject(self, state, __DBG__, "terminating");
+        return tcps_coro_reject(self, state, CDBG, "terminating");
     }
 
     fd = accept4(state->listenfd, &addr, &addrlen, SOCK_NONBLOCK);
@@ -146,16 +143,16 @@ acceptA(struct tcps_coro *self, struct tcps *state, int fd, int events) {
             errno = 0;
             if (tcps_evloop_modify_or_register(self, state, 
                         state->listenfd, CIN | CET)) {
-                return tcps_coro_reject(self, state, __DBG__, "tcps_wait");
+                return tcps_coro_reject(self, state, CDBG, "tcps_wait");
             }
             return tcps_coro_stop();
         }
-        return tcps_coro_reject(self, state, __DBG__, "accept4");
+        return tcps_coro_reject(self, state, CDBG, "accept4");
     }
 
     struct tcpsc *c = malloc(sizeof(struct tcpsc));
     if (c == NULL) {
-        return tcps_coro_reject(self, state, __DBG__, "Out of memory");
+        return tcps_coro_reject(self, state, CDBG, "Out of memory");
     }
 
     c->conn.fd = fd;
@@ -164,8 +161,7 @@ acceptA(struct tcps_coro *self, struct tcps *state, int fd, int events) {
     static struct tcpsc_coro echo = {echoA, connerrorA};
     if (tcpsc_evloop_register(&echo, c, c->conn.fd, CIN | COUT | CONCE)) {
         free(c);
-        return tcps_coro_reject(self, state, __DBG__, 
-                "tcpsc_wait");
+        return tcps_coro_reject(self, state, CDBG, "tcpsc_wait");
     }
 }
 
@@ -182,8 +178,8 @@ listenA(struct tcps_coro *self, struct tcps *state, int fd, int events) {
     return tcps_coro_create_from(self, acceptA);
 
 failed:
-    return tcps_coro_reject(self, state, __DBG__, 
-            "tcp_listen(%s:%u)", state->bindaddr, state->bindport);
+    return tcps_coro_reject(self, state, CDBG, "tcp_listen(%s:%u)", 
+            state->bindaddr, state->bindport);
 }
 
 
@@ -217,12 +213,6 @@ main() {
         .listenfd = -1,
     };
     
-    carrow_init();
-    tcps_coro_create_and_run(listenA, errorA, &state, -1, -1);
-    if (carrow_evloop(&status)) {
-        ret = EXIT_FAILURE;
-    }
-
-    carrow_deinit();
+    tcps_forever(listenA, errorA, &state, &status);
     return ret;
 }
