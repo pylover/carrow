@@ -7,10 +7,12 @@
 
 
 /* timer types and function */
-typedef struct timer {
-    int fd;
-    unsigned long value;
-} timer;
+// typedef struct timer {
+//     int fd;
+// } timer;
+
+
+typedef int timer;
 
 
 #undef CARROW_ENTITY
@@ -25,60 +27,59 @@ static struct sigaction old_action;
 
 
 struct timer_coro 
-errorA(struct timer_coro *self, struct timer *state, int no) {
-    if (state->fd != -1) {
-        timer_evloop_unregister(state->fd);
-        close(state->fd);
+errorA(struct timer_coro *self, int *fdptr, int no) {
+    int fd = *fdptr;
+    if (fd != -1) {
+        timer_evloop_unregister(fd);
+        close(fd);
     }
     return timer_coro_stop();
 }
 
 
-struct timer_coro 
-hitA(struct timer_coro *self, struct timer *state, int fd, int events) {
-    unsigned long value;
-
-    if (events == 0) {
-        return timer_coro_reject(self, state, CDBG, "terminating");
-    }
-    ssize_t bytes = read(state->fd, &value, sizeof(value));
-    if (bytes == 0) {
-        return timer_coro_reject(self, state, CDBG, "read: EOF");
-    }
-
-    if (bytes == -1) {
-        if (!CMUSTWAIT()) {
-            return timer_coro_reject(self, state, CDBG, "read");
-        }
-
-        if (timer_evloop_modify_or_register(self, state, state->fd, 
-                    CIN | CONCE)) {
-            return timer_coro_reject(self, state, CDBG, "timer_wait");
-        }
-        return timer_coro_stop();
-    }
-    
-    state->value += value;
-    INFO("hit, fd: %d, value: %lu", state->fd, state->value);
-    return *self;
-}
+#define CORO_START() if (events == 0) goto terminate
+#define CORO_JUMP(c, l) else if (c) goto l
+#define CORO_WAIT(l) return timer_coro_stop(); l:
+#define CORO_FINISH() terminate: \
+    return timer_coro_reject(self, fdptr, CDBG, "terminating")
 
 
 struct timer_coro 
-timerA(struct timer_coro *self, struct timer *state, int fd, int events) {
+timerA(struct timer_coro *self, int *fdptr, int fd, int events) {
+    CORO_START();
+    CORO_JUMP(fd != -1, tick);
+
+    static unsigned long value = 0;
+    unsigned long tmp;
+    ssize_t bytes;
+
     fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
     if (fd == -1) {
-        return timer_coro_reject(self, state, CDBG, "timerfd_create");
+        return timer_coro_reject(self, fdptr, CDBG, "timerfd_create");
     }
-
-    state->fd = fd;
+    
+    *fdptr = fd;
     struct timespec sec1 = {1, 0};
     struct itimerspec spec = {sec1, sec1};
     if (timerfd_settime(fd, 0, &spec, NULL) == -1) {
-        return timer_coro_reject(self, state, CDBG, "timerfd_settime");
+        return timer_coro_reject(self, fdptr, CDBG, "timerfd_settime");
     }
     
-    return timer_coro_create_from(self, hitA);
+    if (timer_evloop_register(self, fdptr, fd, CIN)) {
+        return timer_coro_reject(self, fdptr, CDBG, "timer_wait");
+    }
+
+    while (true) {
+        CORO_WAIT(tick);
+        bytes = read(fd, &tmp, sizeof(tmp));
+        if (bytes == 0) {
+            return timer_coro_reject(self, fdptr, CDBG, "read: EOF");
+        }
+        value += tmp;
+        INFO("hit, fd: %d, value: %lu", fd, value);
+    }
+
+    CORO_FINISH();
 }
 
 
@@ -99,14 +100,8 @@ void catch_signal() {
 int
 main() {
     clog_verbosity = CLOG_DEBUG;
-
-    /* Signal */
     catch_signal();
     
-    /* Create timer */
-    struct timer state = {
-        .fd = -1,
-    };
-    
-    return timer_forever(timerA, errorA, &state, &status);
+    int fd = -1;
+    return timer_forever(timerA, errorA, &fd, &status);
 }
