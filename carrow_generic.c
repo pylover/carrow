@@ -20,6 +20,10 @@ CARROW_NAME(coro_stop) () {
 
 void
 CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *state) {
+    if (self->run == NULL) {
+        return;
+    }
+
 run:
     self->run(self, state);
     if (self->run == NULL) {

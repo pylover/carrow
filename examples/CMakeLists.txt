@@ -1,5 +1,4 @@
 add_library(addr OBJECT addr.c addr.h)
-add_library(tcp OBJECT tcp.c tcp.h)
 add_library(tty OBJECT tty.c tty.h)
 
 
@@ -12,23 +11,22 @@ set(VALGRIND_FLAGS
     --track-fds=yes 
 )
 
-# add_executable(tcpclient
-#     $<TARGET_OBJECTS:carrow>
-#     $<TARGET_OBJECTS:tcp>
-#     $<TARGET_OBJECTS:addr>
-#     $<TARGET_OBJECTS:tty>
-#     tcpclient.c
-# )
-# target_include_directories(tcpclient PUBLIC "${CMAKE_SOURCE_DIR}")
-# target_link_libraries(tcpclient PUBLIC clog mrb)
-# add_custom_target(run_tcpclient $<TARGET_FILE:tcpclient>)
-# add_custom_target(profile_tcpclient
-#     COMMAND "valgrind" 
-#     ${VALGRIND_FLAGS}
-#     $<TARGET_FILE:tcpclient>
-# )
-# 
-# 
+add_executable(tcpclient
+    $<TARGET_OBJECTS:carrow>
+    $<TARGET_OBJECTS:addr>
+    $<TARGET_OBJECTS:tty>
+    tcpclient.c
+)
+target_include_directories(tcpclient PUBLIC "${CMAKE_SOURCE_DIR}")
+target_link_libraries(tcpclient PUBLIC clog mrb)
+add_custom_target(run_tcpclient $<TARGET_FILE:tcpclient>)
+add_custom_target(profile_tcpclient
+    COMMAND "valgrind" 
+    ${VALGRIND_FLAGS}
+    $<TARGET_FILE:tcpclient>
+)
+
+
 # add_executable(tcpserver
 #     $<TARGET_OBJECTS:carrow>
 #     $<TARGET_OBJECTS:tcp>

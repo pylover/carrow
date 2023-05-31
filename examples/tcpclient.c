@@ -6,15 +6,22 @@
 #include <mrb.h>
 
 #include <stdlib.h>
-#include <unistd.h>
 #include <signal.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 
 typedef struct tcpc {
     const char *hostname;
     const char *port;
 
-    struct tcpconn conn;
+    int fd;
+    struct sockaddr localaddr;
+    struct sockaddr remoteaddr;
     mrb_t inbuff;
     mrb_t outbuff;
 } tcpc;
@@ -35,137 +42,191 @@ volatile int status = WORKING;
 static struct sigaction old_action;
 
 
-struct tcpc_coro
-errorA(struct tcpc_coro *self, struct tcpc *state, int no) {
-    struct tcpconn *conn = &(state->conn);
-    
+// struct tcpc_coro
+// errorA(struct tcpc_coro *self, struct tcpc *conn, int no) {
+//     struct tcpconn *conn = &(conn->conn);
+//     
+//     tcpc_evloop_unregister(STDIN_FILENO);
+//     tcpc_evloop_unregister(STDOUT_FILENO);
+//     if (conn->fd != -1) {
+//         tcpc_evloop_unregister(conn->fd);
+//     }
+//     
+//     if (conn->fd > 2) {
+//         close(conn->fd);
+//     }
+// 
+//     errno = 0;
+//     return tcpc_coro_stop();
+// }
+
+
+void 
+ioA(struct tcpc_coro *self, struct tcpc *conn) {
+    ssize_t bytes;
+    struct mrb *in = conn->inbuff;
+    struct mrb *out = conn->outbuff;
+    CORO_START;
+
+    while (true) {
+        /* stdin read */
+        if (mrb_isfull(out)) {
+            CORO_REJECT("outbuff full");
+        }
+
+        CORO_WAIT(STDIN_FILENO, CIN);
+        bytes = mrb_readin(out, STDIN_FILENO, mrb_available(out));
+        if (bytes == 0) {
+            CORO_REJECT("stdin EOF");
+        }
+        if (bytes == -1) {
+            CORO_REJECT("read(stdin)");
+        }
+        
+        /* tcp write */
+        CORO_WAIT(conn->fd, COUT);
+        bytes = mrb_writeout(out, conn->fd, mrb_used(out));
+        if (bytes == 0) {
+            CORO_REJECT("TCP write EOF");
+        }
+        if ((bytes == -1) && (!CMUSTWAIT())) {
+            CORO_REJECT("write(tcp:%d)", conn->fd);
+        }
+
+        /* tcp read */
+        if (mrb_isfull(in)) {
+            CORO_REJECT("inbuff full");
+        }
+
+        CORO_WAIT(conn->fd, CIN);
+        bytes = mrb_readin(in, conn->fd, mrb_available(in));
+        if (bytes == 0) {
+            CORO_REJECT("TCP read EOF");
+        }
+        if ((bytes == -1) && (!CMUSTWAIT())) {
+            CORO_REJECT("read(tcp:%d)", conn->fd);
+        }
+
+        /* stdout write */
+        CORO_WAIT(STDOUT_FILENO, COUT);
+        bytes = mrb_writeout(in, STDOUT_FILENO, mrb_used(in));
+        if (bytes == 0) {
+            CORO_REJECT("stdout EOF");
+        }
+        if (bytes == -1) {
+            CORO_REJECT("write(stdout)");
+        }
+    }
+
+    CORO_FINALLY;
+    DEBUG("ioA END: %d", self->fd);
     tcpc_evloop_unregister(STDIN_FILENO);
     tcpc_evloop_unregister(STDOUT_FILENO);
     if (conn->fd != -1) {
         tcpc_evloop_unregister(conn->fd);
-    }
-    
-    if (conn->fd > 2) {
         close(conn->fd);
     }
-
-    errno = 0;
-    return tcpc_coro_stop();
-}
-
-
-struct tcpc_coro 
-ioA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
-    ssize_t bytes;
-    struct mrb *in = state->inbuff;
-    struct mrb *out = state->outbuff;
-    struct tcpconn *conn = &(state->conn);
-    int outavail = mrb_available(out);
-    int outused = mrb_used(out);
-    int inavail = mrb_available(out);
-    int inused = mrb_used(in);
-
-    if ((events & CERR) || (events & CRDHUP)) {
-        return tcpc_coro_reject(self, state, CDBG, "evloop", fd);
-    }
-
-    /* stdin read */
-    if ((fd == STDIN_FILENO) && outavail) {
-        bytes = mrb_readin(out, STDIN_FILENO, outavail);
-        if (bytes == -1) {
-            return tcpc_coro_reject(self, state, CDBG, "read(%d)", fd);
-        }
-        outavail -= bytes;
-        outused += bytes;
-    }
-
-    /* stdout write */
-    if ((fd == STDOUT_FILENO) && inused) {
-        bytes = mrb_writeout(in, STDOUT_FILENO, inused);
-        if (bytes == -1) {
-            return tcpc_coro_reject(self, state, CDBG, "write(%d)", fd);
-        }
-        inused -= bytes;
-        inavail += bytes;
-    }
-
-    /* tcp write */
-    if ((fd == conn->fd) && outused) {
-        bytes = mrb_writeout(out, conn->fd, outused);
-        if ((bytes <= 0) && (!CMUSTWAIT())) {
-            return tcpc_coro_reject(self, state, CDBG, "write(%d)", fd);
-        }
-        outused -= bytes;
-        outavail += bytes;
-    }
-
-    if ((fd == conn->fd) && inavail) {
-        /* tcp read */
-        bytes = mrb_readin(in, conn->fd, inavail);
-        if ((bytes <= 0) && (!CMUSTWAIT())) {
-            return tcpc_coro_reject(self, state, CDBG, "read(%d)", conn->fd);
-        }
-        inavail -= bytes;
-        inused += bytes;
-    }
-
-    /* reset errno and rearm events */
-    errno = 0;
-    int op;
-
-    /* stdin */
-    if (outavail && tcpc_evloop_modify_or_register(self, state, STDIN_FILENO, 
-                CIN | CONCE | CET)) {
-        return tcpc_coro_reject(self, state, CDBG, "wait(%d)", STDIN_FILENO);
-    }
-
-    /* stdout */
-    if (inused && tcpc_evloop_modify_or_register(self, state, STDOUT_FILENO, 
-                COUT | CONCE | CET)) {
-        return tcpc_coro_reject(self, state, CDBG, "wait(%d)", STDOUT_FILENO);
-    }
-
-    /* tcp socket */
-    if (outused || inavail) {
-        op = CONCE | CET;
-        if (inavail) {
-            op |= CIN;
-        }
-
-        if (outused) {
-            op |= COUT;
-        }
-
-        if (tcpc_evloop_modify_or_register(self, state, conn->fd, op)) {
-            return tcpc_coro_reject(self, state, CDBG, "wait(%d)", fd);
-        }
-    }
     
-    return tcpc_coro_stop();
+    errno = 0;
+    CORO_END;
 }
 
 
-struct tcpc_coro 
-connectA(struct tcpc_coro *self, struct tcpc *state, int fd, int events) {
-    struct tcpconn *conn = &(state->conn);
-    if (tcp_connect(conn, state->hostname, state->port)) {
-        goto failed;
+void 
+connectA(struct tcpc_coro *self, struct tcpc *conn) {
+    int err = 0;
+    int optlen = 4;
+    int ret;
+    struct addrinfo hints;
+    struct addrinfo *result;
+    struct addrinfo *try;
+    int cfd;
+    CORO_START;
+
+    /* Resolve hostname */
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;         /* Allow IPv4 only.*/
+    hints.ai_socktype = SOCK_STREAM; /* Datagram socket */
+    hints.ai_flags = AI_NUMERICSERV;
+    hints.ai_protocol = 0;
+    if (getaddrinfo(conn->hostname, conn->port, &hints, &result) != 0) {
+        CORO_REJECT("getaddrinfo");
     }
 
-    if (errno == EINPROGRESS) {
-        errno = 0;
-        if (tcpc_evloop_register(self, state, conn->fd, COUT | CONCE)) {
-            goto failed;
+    /* getaddrinfo() returns a list of address structures.
+       Try each address until we successfully connect(2).
+       If socket(2) (or connect(2)) fails, we (close the socket
+       and) try the next address.
+    */
+    for (try = result; try != NULL; try = try->ai_next) {
+        cfd = socket(try->ai_family, try->ai_socktype | SOCK_NONBLOCK, 
+                try->ai_protocol);
+        if (cfd < 0) {
+            continue;
         }
 
-        return tcpc_coro_stop();
+        if (connect(cfd, try->ai_addr, try->ai_addrlen) == 0) {
+            /* Connection success */
+            break;
+        }
+
+        if (errno == EINPROGRESS) {
+            /* Waiting to connect */
+            break;
+        }
+
+        close(cfd);
+        cfd = -1;
     }
 
-    return tcpc_coro_create_from(self, ioA);
+    if (cfd < 0) {
+        freeaddrinfo(result);
+        CORO_REJECT("connect");
+    }
 
-failed:
-    return tcpc_coro_reject(self, state, CDBG, "tcp_connect(%s:%s)", 
-            state->hostname, state->port);
+    /* Address resolved, updating conn. */
+    memcpy(&(conn->remoteaddr), try->ai_addr, sizeof(struct sockaddr));
+    conn->fd = cfd;
+    freeaddrinfo(result);
+    if (errno == EINPROGRESS) {
+        /* Connection is in-progress, Waiting. */
+        /* The socket is nonblocking and the connection cannot be
+           completed immediately. It is possible to epoll(2) for
+           completion by selecting the socket for writing.
+        */
+        CORO_WAIT(conn->fd, COUT);
+
+        /* After epoll(2) indicates writability, use getsockopt(2) to read the
+           SO_ERROR option at level SOL_SOCKET to determine whether connect()
+           completed successfully (SO_ERROR is zero) or unsuccessfully
+           (SO_ERROR is one of the usual error codes listed here,
+           explaining the reason for the failure).
+        */
+        ret = getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, &err, &optlen);
+        if (ret || err) {
+            errno = err;
+            CORO_REJECT("getsockopt");
+        }
+    }
+
+    /* Hooray, Connected! */
+    errno = 0;
+    socklen_t socksize = sizeof(conn->localaddr);
+    if (getsockname(conn->fd, &(conn->localaddr), &socksize)) {
+        CORO_REJECT("getsockname");
+    }
+
+    CORO_FINALLY;
+    if (errno != 0) {
+        if (conn->fd != -1) {
+            tcpc_evloop_unregister(conn->fd);
+            close(conn->fd);
+        }
+        
+        errno = 0;
+        CORO_END;
+    }
+    CORO_NEXT(ioA);
 }
 
 
@@ -198,20 +259,20 @@ main() {
         return EXIT_FAILURE;
     }
 
-    struct tcpc state = {
+    struct tcpc conn = {
         .hostname = "localhost",
         .port = "3030",
     };
     
-    state.inbuff = mrb_create(BUFFSIZE);
-    state.outbuff = mrb_create(BUFFSIZE);
-    if (state.inbuff == NULL || state.outbuff == NULL) {
+    conn.inbuff = mrb_create(BUFFSIZE);
+    conn.outbuff = mrb_create(BUFFSIZE);
+    if (conn.inbuff == NULL || conn.outbuff == NULL) {
         ERROR("Cannot initialized buffers.");
         return EXIT_FAILURE;
     }
 
-    ret = tcpc_forever(connectA, errorA, &state, &status);
-    if (mrb_destroy(state.inbuff) || mrb_destroy(state.outbuff)) {
+    ret = tcpc_forever(connectA, &conn, &status);
+    if (mrb_destroy(conn.inbuff) || mrb_destroy(conn.outbuff)) {
         ERROR("Cannot dispose buffers.");
         ret = EXIT_FAILURE;
     }
