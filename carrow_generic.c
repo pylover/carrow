@@ -31,7 +31,7 @@ run:
     }
 
     if (CARROW_NAME(evloop_modify_or_register)(self, state, self->fd, 
-            CONCE | self->events)) {
+                self->events)) {
         self->events = 0;
         goto run;
     }

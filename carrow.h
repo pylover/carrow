@@ -12,7 +12,7 @@
     switch(self->line) { case 0:
 #define CORO_REJECT(...) ERROR(__VA_ARGS__); goto carrow_finally;
 #define CORO_WAIT(f, e) do { self->line = __LINE__, self->fd = f, \
-    self->events = e; return; case __LINE__:} while (0)
+    self->events = e | CONCE; return; case __LINE__:} while (0)
 #define CORO_FINALLY }; carrow_finally:
 #define CORO_END self->run = NULL;
 

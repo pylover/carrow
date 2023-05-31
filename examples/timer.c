@@ -8,7 +8,7 @@
 
 
 typedef struct timer {
-    int interval;
+    unsigned int interval;
     unsigned long value;
     const char *title;
 } timer;
@@ -39,21 +39,31 @@ void catch_signal() {
 }
 
 
+int
+maketimer(unsigned int interval) {
+    int fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
+    if (fd == -1) {
+        return -1;
+    }
+    
+    struct timespec sec1 = {interval, 0};
+    struct itimerspec spec = {sec1, sec1};
+    if (timerfd_settime(fd, 0, &spec, NULL) == -1) {
+        return -1;
+    }
+    return fd;
+}
+
+
 void
 timerA(struct timer_coro *self, struct timer *state) {
     CORO_START;
     unsigned long tmp;
     ssize_t bytes;
 
-    self->fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
+    self->fd = maketimer(state->interval);
     if (self->fd == -1) {
-        CORO_REJECT("timerfd_create");
-    }
-    
-    struct timespec sec1 = {state->interval, 0};
-    struct itimerspec spec = {sec1, sec1};
-    if (timerfd_settime(self->fd, 0, &spec, NULL) == -1) {
-        CORO_REJECT("timerfd_settime");
+        CORO_REJECT("maketimer");
     }
     
     while (true) {
