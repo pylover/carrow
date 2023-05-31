@@ -7,6 +7,16 @@
 #include <sys/epoll.h>
 
 
+/* Coroutine */
+#define CORO_START if (self->events == 0) goto carrow_finally; \
+    switch(self->line) { case 0:
+#define CORO_REJECT(...) ERROR(__VA_ARGS__); goto carrow_finally;
+#define CORO_WAIT(f, e) do { self->line = __LINE__, self->fd = f, \
+    self->events = e; return; case __LINE__:} while (0)
+#define CORO_FINALLY }; carrow_finally:
+#define CORO_END self->run = NULL;
+
+
 /* Generic stuff */
 #define CARROW_NAME_PASTER(x, y) x ## _ ## y
 #define CARROW_NAME_EVALUATOR(x, y)  CARROW_NAME_PASTER(x, y)
@@ -32,13 +42,14 @@
 
 
 struct carrow_generic_coro {
-    void *resolve;
-    void *reject;
+    void *run;
+    int line;
+    int fd;
+    int events;
 };
 
 
-typedef void (*carrow_generic_coro_resolver) 
-    (void *coro, void *state, int fd, int events);
+typedef void (*carrow_generic_corofunc) (void *coro, void *state);
 
 
 int
@@ -51,17 +62,17 @@ carrow_deinit();
 
 int
 carrow_evloop_register(void *coro, void *state, int fd, int events, 
-        carrow_generic_coro_resolver handler);
+        carrow_generic_corofunc handler);
 
 
 int
 carrow_evloop_modify(void *c, void *state, int fd, int events, 
-        carrow_generic_coro_resolver handler);
+        carrow_generic_corofunc handler);
 
 
 int
 carrow_evloop_modify_or_register(void *coro, void *state, int fd, int events, 
-        carrow_generic_coro_resolver handler);
+        carrow_generic_corofunc handler);
 
 
 int
@@ -74,11 +85,7 @@ carrow_evloop(volatile int *status);
 
 int
 carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state,
-        carrow_generic_coro_resolver *handler);
-
-
-void
-carrow_evbag_resolve(int fd, int events, struct carrow_generic_coro *coro);
+        carrow_generic_corofunc *handler);
 
 
 #endif

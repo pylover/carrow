@@ -17,7 +17,7 @@ static int _epollfd = -1;
 struct evbag {
     struct carrow_generic_coro coro;
     void *state;
-    carrow_generic_coro_resolver handler;
+    carrow_generic_corofunc handler;
 };
 
 
@@ -27,7 +27,7 @@ struct evbag {
 
 static int
 evbag_set(int fd, struct carrow_generic_coro *coro, void *state,
-        carrow_generic_coro_resolver handler) {
+        carrow_generic_corofunc handler) {
     if (fd >= _openmax) {
         return -1;
     }
@@ -71,7 +71,7 @@ evbag_delete(int fd) {
 
 int
 carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state, 
-        carrow_generic_coro_resolver *handler) {
+        carrow_generic_corofunc *handler) {
     if (fd >= _openmax) {
         return -1;
     }
@@ -97,24 +97,24 @@ carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state,
 }
 
 
-void
-carrow_evbag_resolve(int fd, int events, struct carrow_generic_coro *coro) {
+static void
+carrow_evbag_resolve(int fd, int events) {
     if (fd >= _openmax) {
         return;
     }
     struct evbag *bag = _evbags[fd];
-    struct carrow_generic_coro *c = coro;
+    struct carrow_generic_coro c;
     
     if (bag == NULL) {
         /* Event already removed */
         return;
     }
     
-    if (c == NULL) {
-        c = &(bag->coro);
-    }
+    memcpy(&c, &bag->coro, sizeof(struct carrow_generic_coro));
 
-    bag->handler(c, bag->state, fd, events);
+    c.fd = fd;
+    c.events = events;
+    bag->handler(&c, bag->state);
 }
 
 
@@ -171,7 +171,7 @@ carrow_init(unsigned int openmax) {
 
 int
 carrow_evloop_register(void *coro, void *state, int fd, int events, 
-        carrow_generic_coro_resolver handler) {
+        carrow_generic_corofunc handler) {
     struct epoll_event ee;
 
     if (EVBAG_HAS(fd)) {
@@ -192,7 +192,7 @@ carrow_evloop_register(void *coro, void *state, int fd, int events,
 
 int
 carrow_evloop_modify(void *coro, void *state, int fd, int events, 
-        carrow_generic_coro_resolver handler) {
+        carrow_generic_corofunc handler) {
     struct epoll_event ee;
    
     if (EVBAG_ISNULL(fd)) {
@@ -216,7 +216,7 @@ carrow_evloop_modify(void *coro, void *state, int fd, int events,
 
 int
 carrow_evloop_modify_or_register(void *coro, void *state, int fd, int events, 
-        carrow_generic_coro_resolver handler) {
+        carrow_generic_corofunc handler) {
     
     if (EVBAG_ISNULL(fd)) {
         return carrow_evloop_register(coro, state, fd, events, handler);
@@ -260,13 +260,13 @@ evloop:
         for (i = 0; i < nfds; i++) {
             ee = events[i];
             fd = ee.data.fd;
-            carrow_evbag_resolve(fd, ee.events, NULL);
+            carrow_evbag_resolve(fd, ee.events);
         }
     }
 
 terminate:
     for (fd = 0; fd < _openmax; fd++) {
-        carrow_evbag_resolve(fd, 0, NULL);
+        carrow_evbag_resolve(fd, 0);
     }
 
     if (_evbagscount && ((status == NULL) || (*status > EXIT_FAILURE))) {

@@ -15,32 +15,27 @@ typedef struct foo {
 #include "carrow_generic.c"
 
 
-struct foo_coro
-barA(struct foo_coro *self, struct foo *s, int efd, int events);
+void
+barA(struct foo_coro *self, struct foo *s);
 
 
-struct foo_coro
-errorA(struct foo_coro *self, struct foo *s, int no) {
-    return foo_coro_stop();
-}
-
-
-struct foo_coro
-fooA(struct foo_coro *self, struct foo *s, int efd, int events) {
+void
+fooA(struct foo_coro *self, struct foo *s) {
     if (s->all >= 10) {
-        return foo_coro_reject(self, s, CDBG, "All done");
+        self->run = NULL;
+        return;
     }
     s->foo++;
     s->all++;
-    return foo_coro_create_from(self, barA);
+    self->run = barA;
 }
 
 
-struct foo_coro
-barA(struct foo_coro *self, struct foo *s, int efd, int events) {
+void
+barA(struct foo_coro *self, struct foo *s) {
     s->bar++;
     s->all++;
-    return foo_coro_create_from(self, fooA);
+    self->run = fooA;
 }
 
 
@@ -49,7 +44,7 @@ test_foo_loop() {
     static char b[256];
     struct foo state = {0, 0, 0};
     
-    foo_coro_create_and_run(fooA, errorA, &state);
+    foo_coro_create_and_run(fooA, &state);
     eqint(10, state.all);
     eqint(5, state.foo);
     eqint(5, state.bar);
