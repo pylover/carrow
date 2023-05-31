@@ -76,10 +76,9 @@ CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int fd,
 
 void
 CARROW_NAME(coro_create_and_run) (CARROW_NAME(coro_resolver) f, 
-        CARROW_NAME(coro_rejector) r, CARROW_ENTITY *state, int fd, 
-        int events) {
+        CARROW_NAME(coro_rejector) r, CARROW_ENTITY *state) {
     CARROW_NAME(coro) c = CARROW_NAME(coro_create)(f, r);
-    CARROW_NAME(coro_run)(&c, state, fd, events);
+    CARROW_NAME(coro_run)(&c, state, -1, -1);
 }
 
 
@@ -120,7 +119,7 @@ CARROW_NAME(forever) (CARROW_NAME(coro_resolver) resolve,
     int ret = EXIT_SUCCESS;
 
     carrow_init(0);
-    CARROW_NAME(coro_create_and_run) (resolve, reject, state, -1, -1);
+    CARROW_NAME(coro_create_and_run) (resolve, reject, state);
     if (carrow_evloop(status)) {
         ret = EXIT_FAILURE;
     }

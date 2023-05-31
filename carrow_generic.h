@@ -57,8 +57,7 @@ CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *s, int fd,
 
 void
 CARROW_NAME(coro_create_and_run) (CARROW_NAME(coro_resolver) f, 
-        CARROW_NAME(coro_rejector) r, CARROW_ENTITY *state, int fd, 
-        int events);
+        CARROW_NAME(coro_rejector) r, CARROW_ENTITY *state);
 
 
 int

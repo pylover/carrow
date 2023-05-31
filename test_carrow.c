@@ -49,7 +49,7 @@ test_foo_loop() {
     static char b[256];
     struct foo state = {0, 0, 0};
     
-    foo_coro_create_and_run(fooA, errorA, &state, -1, -1);
+    foo_coro_create_and_run(fooA, errorA, &state);
     eqint(10, state.all);
     eqint(5, state.foo);
     eqint(5, state.bar);
