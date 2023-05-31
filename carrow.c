@@ -1,7 +1,5 @@
 #include "carrow.h"
 
-#include <clog.h>
-
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -36,7 +34,6 @@ evbag_set(int fd, struct carrow_generic_coro *coro, void *state,
     if (bag == NULL) {
         bag = malloc(sizeof(struct evbag));
         if (bag == NULL) {
-            ERROR("Out of memory");
             errno = ENOMEM;
             return -1;
         }
@@ -124,7 +121,6 @@ evbags_init() {
     _evbags = calloc(_openmax, sizeof(struct evbag*));
     if (_evbags == NULL) {
         errno = ENOMEM;
-        ERROR("Out of memory: %u", _openmax);
         return -1;
     }
     
@@ -143,7 +139,6 @@ evbags_deinit() {
 int
 carrow_init(unsigned int openmax) {
     if (_epollfd != -1 ) {
-        ERROR("Carrow event loop already initialized.");
         return -1;
     }
    
@@ -154,7 +149,7 @@ carrow_init(unsigned int openmax) {
     else {
         _openmax = sysconf(_SC_OPEN_MAX);
         if (_openmax == -1) {
-            ERROR("Cannot get maximum allowed openfiles for this process.");
+            EINVAL;
             return -1;
         }
     }

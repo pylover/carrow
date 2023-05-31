@@ -1,7 +1,5 @@
 #include "carrow.h"
 
-#include <clog.h>
-
 #include <stdarg.h>
 #include <unistd.h>
 #include <stdlib.h>

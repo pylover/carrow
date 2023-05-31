@@ -1,5 +1,6 @@
 #include "carrow.h"
 
+#include <clog.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
