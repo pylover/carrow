@@ -76,20 +76,14 @@ ioA(struct tcpc_coro *self, struct tcpc *conn) {
 
         CORO_WAIT(STDIN_FILENO, CIN);
         bytes = mrb_readin(out, STDIN_FILENO, mrb_available(out));
-        if (bytes == 0) {
-            CORO_REJECT("stdin EOF");
-        }
-        if (bytes == -1) {
+        if (bytes <= 0) {
             CORO_REJECT("read(stdin)");
         }
         
         /* tcp write */
         CORO_WAIT(conn->fd, COUT);
         bytes = mrb_writeout(out, conn->fd, mrb_used(out));
-        if (bytes == 0) {
-            CORO_REJECT("TCP write EOF");
-        }
-        if ((bytes == -1) && (!CMUSTWAIT())) {
+        if (bytes <= 0) {
             CORO_REJECT("write(tcp:%d)", conn->fd);
         }
 
@@ -100,26 +94,22 @@ ioA(struct tcpc_coro *self, struct tcpc *conn) {
 
         CORO_WAIT(conn->fd, CIN);
         bytes = mrb_readin(in, conn->fd, mrb_available(in));
-        if (bytes == 0) {
-            CORO_REJECT("TCP read EOF");
-        }
-        if ((bytes == -1) && (!CMUSTWAIT())) {
+        if (bytes <= 0) {
             CORO_REJECT("read(tcp:%d)", conn->fd);
         }
 
         /* stdout write */
         CORO_WAIT(STDOUT_FILENO, COUT);
         bytes = mrb_writeout(in, STDOUT_FILENO, mrb_used(in));
-        if (bytes == 0) {
-            CORO_REJECT("stdout EOF");
-        }
-        if (bytes == -1) {
+        if (bytes <= 0) {
             CORO_REJECT("write(stdout)");
         }
     }
 
     CORO_FINALLY;
-    DEBUG("ioA END: %d", self->fd);
+    if (bytes == 0) {
+        ERROR("EOF");
+    }
     tcpc_evloop_unregister(STDIN_FILENO);
     tcpc_evloop_unregister(STDOUT_FILENO);
     if (conn->fd != -1) {
