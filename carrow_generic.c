@@ -1,7 +1,5 @@
 #include "carrow.h"
 
-#include <clog.h>
-
 #include <stdarg.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -36,8 +34,6 @@ run:
         goto run;
     }
 
-
-    DEBUG("reg: fd: %d", self->fd);
     if (CARROW_NAME(evloop_modify_or_register)(self, state, self->fd, 
                 self->events)) {
         self->events = 0;
