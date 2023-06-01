@@ -28,6 +28,18 @@
     } while (0)
 
 
+#define CORO_SLEEP(sec) \
+    do { \
+        if (carrow_sleep((struct carrow_generic_coro*)self, sec, __LINE__)) \
+            goto carrow_finally;\
+        return; \
+        case __LINE__: \
+        carrow_evloop_unregister(self->fd); \
+        close(self->fd); \
+        self->fd = -1; \
+    } while (0)
+
+
 #define CORO_FINALLY \
     }; \
     carrow_finally:
@@ -44,6 +56,13 @@
         self->fd = -1; \
         self->line = 0; \
     } while (0)
+
+
+#define CORO_CLEANUP \
+    if (self->fd != -1) { \
+        carrow_evloop_unregister(self->fd); \
+        close(self->fd); \
+    } CORO_END
 
 
 /* Generic stuff */
@@ -119,6 +138,11 @@ carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state,
 
 int
 carrow_handleinterrupts();
+
+
+int
+carrow_sleep(struct carrow_generic_coro *self, unsigned int seconds, 
+        int line);
 
 
 #endif

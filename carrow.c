@@ -7,10 +7,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/epoll.h>
+#include <sys/timerfd.h>
 
 
 static volatile int _carrow_status = 99999;
 static volatile int *_carrow_status_ptr = NULL;
+static struct sigaction old_action;
 static unsigned int _openmax;
 static struct evbag **_evbags;
 static volatile unsigned int _evbagscount;
@@ -233,7 +235,27 @@ carrow_evloop_unregister(int fd) {
 }
 
 
-static struct sigaction old_action;
+int
+carrow_sleep(struct carrow_generic_coro *self, unsigned int seconds, 
+        int line) {
+    int fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
+    if (fd == -1) {
+        return -1;
+    }
+    
+    struct timespec sec = {seconds, 0};
+    struct timespec zero = {0, 0};
+    struct itimerspec spec = {zero, sec};
+    if (timerfd_settime(fd, 0, &spec, NULL) == -1) {
+        close(fd);
+        return -1;
+    }
+    
+    self->fd = fd; 
+    self->events = CIN | CONCE;
+    self->line = line;
+    return 0;
+}
 
 
 static void 

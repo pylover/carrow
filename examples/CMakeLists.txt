@@ -55,3 +55,17 @@ add_custom_target(profile_timer
     ${VALGRIND_FLAGS}
     $<TARGET_FILE:timer>
 )
+
+
+add_executable(sleep
+    $<TARGET_OBJECTS:carrow>
+    sleep.c
+)
+target_include_directories(sleep PUBLIC "${CMAKE_SOURCE_DIR}")
+target_link_libraries(sleep PUBLIC clog)
+add_custom_target(run_sleep $<TARGET_FILE:sleep>)
+add_custom_target(profile_sleep
+    COMMAND "valgrind" 
+    ${VALGRIND_FLAGS}
+    $<TARGET_FILE:sleep>
+)
