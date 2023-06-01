@@ -25,13 +25,15 @@ volatile int status = WORKING;
 static struct sigaction old_action;
 
 
-void sighandler(int s) {
+static void 
+sighandler(int s) {
     PRINTE(CR);
     status = EXIT_SUCCESS;
 }
 
 
-void catch_signal() {
+static void 
+catch_signal() {
     struct sigaction new_action = {sighandler, 0, 0, 0, 0};
     if (sigaction(SIGINT, &new_action, &old_action) != 0) {
         FATAL("sigaction");
@@ -39,7 +41,7 @@ void catch_signal() {
 }
 
 
-int
+static int
 maketimer(unsigned int interval) {
     int fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
     if (fd == -1) {
@@ -55,7 +57,7 @@ maketimer(unsigned int interval) {
 }
 
 
-void
+static void
 timerA(struct timer_coro *self, struct timer *state) {
     CORO_START;
     unsigned long tmp;

@@ -27,16 +27,16 @@ typedef struct tcpserver {
 
 
 /* TCP connection carrow types and function */
-typedef struct conn {
+typedef struct tcpconn {
     int fd;
     struct sockaddr localaddr;
     struct sockaddr remoteaddr;
     mrb_t buff;
-} conn;
+} tcpconn;
 
 
 #undef CARROW_ENTITY
-#define CARROW_ENTITY conn
+#define CARROW_ENTITY tcpconn
 #include "carrow_generic.h"
 #include "carrow_generic.c"
 
@@ -50,8 +50,8 @@ volatile int status = WORKING;
 static struct sigaction old_action;
 
 
-void
-echoA(struct conn_coro *self, struct conn *conn) {
+static void
+echoA(struct tcpconn_coro *self, struct tcpconn *conn) {
     ssize_t bytes;
     struct mrb *buff = conn->buff;
     CORO_START;
@@ -86,7 +86,7 @@ echoA(struct conn_coro *self, struct conn *conn) {
 
     CORO_FINALLY;
     if (conn->fd != -1) {
-        conn_evloop_unregister(conn->fd);
+        tcpconn_evloop_unregister(conn->fd);
         close(conn->fd);
     }
     if (mrb_destroy(conn->buff)) {
@@ -97,7 +97,7 @@ echoA(struct conn_coro *self, struct conn *conn) {
 }
 
 
-void
+static void
 listenA(struct tcpserver_coro *self, struct tcpserver *state) {
     socklen_t addrlen = sizeof(struct sockaddr);
     struct sockaddr bindaddr;
@@ -143,7 +143,7 @@ listenA(struct tcpserver_coro *self, struct tcpserver *state) {
         }
 
         /* New Connection */
-        struct conn *c = malloc(sizeof(struct conn));
+        struct tcpconn *c = malloc(sizeof(struct tcpconn));
         if (c == NULL) {
             CORO_REJECT("Out of memory");
         }
@@ -152,14 +152,12 @@ listenA(struct tcpserver_coro *self, struct tcpserver *state) {
         c->localaddr = bindaddr;
         c->remoteaddr = connaddr;
         c->buff = mrb_create(BUFFSIZE);
-        conn_coro_create_and_run(echoA, c);
+        tcpconn_coro_create_and_run(echoA, c);
     }
 
     CORO_FINALLY;
-    if (errno) {
-        close(fd);
-        tcpserver_evloop_unregister(fd);
-    }
+    close(fd);
+    tcpserver_evloop_unregister(fd);
     CORO_END;
 }
 

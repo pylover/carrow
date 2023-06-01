@@ -15,7 +15,7 @@
 #include <sys/socket.h>
 
 
-typedef struct tcpc {
+typedef struct tcpconn {
     const char *hostname;
     const char *port;
 
@@ -24,11 +24,11 @@ typedef struct tcpc {
     struct sockaddr remoteaddr;
     mrb_t inbuff;
     mrb_t outbuff;
-} tcpc;
+} tcpconn;
 
 
 #undef CARROW_ENTITY
-#define CARROW_ENTITY tcpc
+#define CARROW_ENTITY tcpconn
 #include "carrow_generic.h"
 #include "carrow_generic.c"
 
@@ -42,8 +42,8 @@ volatile int status = WORKING;
 static struct sigaction old_action;
 
 
-void 
-ioA(struct tcpc_coro *self, struct tcpc *conn) {
+static void 
+ioA(struct tcpconn_coro *self, struct tcpconn *conn) {
     ssize_t bytes = 0;
     struct mrb *in = conn->inbuff;
     struct mrb *out = conn->outbuff;
@@ -91,10 +91,10 @@ ioA(struct tcpc_coro *self, struct tcpc *conn) {
     if (bytes == 0) {
         ERROR("EOF");
     }
-    tcpc_evloop_unregister(STDIN_FILENO);
-    tcpc_evloop_unregister(STDOUT_FILENO);
+    tcpconn_evloop_unregister(STDIN_FILENO);
+    tcpconn_evloop_unregister(STDOUT_FILENO);
     if (conn->fd != -1) {
-        tcpc_evloop_unregister(conn->fd);
+        tcpconn_evloop_unregister(conn->fd);
         close(conn->fd);
     }
     
@@ -103,8 +103,8 @@ ioA(struct tcpc_coro *self, struct tcpc *conn) {
 }
 
 
-void 
-connectA(struct tcpc_coro *self, struct tcpc *conn) {
+static void 
+connectA(struct tcpconn_coro *self, struct tcpconn *conn) {
     int err = 0;
     int optlen = 4;
     int ret;
@@ -192,7 +192,7 @@ connectA(struct tcpc_coro *self, struct tcpc *conn) {
     CORO_FINALLY;
     if (errno != 0) {
         if (conn->fd != -1) {
-            tcpc_evloop_unregister(conn->fd);
+            tcpconn_evloop_unregister(conn->fd);
             close(conn->fd);
         }
         
@@ -232,7 +232,7 @@ main() {
         return EXIT_FAILURE;
     }
 
-    struct tcpc conn = {
+    struct tcpconn conn = {
         .hostname = "localhost",
         .port = "3030",
     };
@@ -244,7 +244,7 @@ main() {
         return EXIT_FAILURE;
     }
 
-    ret = tcpc_forever(connectA, &conn, &status);
+    ret = tcpconn_forever(connectA, &conn, &status);
     if (mrb_destroy(conn.inbuff) || mrb_destroy(conn.outbuff)) {
         ERROR("Cannot dispose buffers.");
         ret = EXIT_FAILURE;
