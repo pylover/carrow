@@ -8,7 +8,7 @@ static char addrtemp[256];
 
 
 char *
-carrow_sockaddr_dump(struct sockaddr *addr) {
+sockaddr_dump(struct sockaddr *addr) {
     struct sockaddr_in *addrin = (struct sockaddr_in*) addr;
     sprintf(addrtemp, "%s:%d", 
             inet_ntoa(addrin->sin_addr),
@@ -18,7 +18,7 @@ carrow_sockaddr_dump(struct sockaddr *addr) {
 
 
 int
-carrow_sockaddr_parse(struct sockaddr *saddr, const char *addr, 
+sockaddr_parse(struct sockaddr *saddr, const char *addr, 
         unsigned short port) {
     struct sockaddr_in *addrin = (struct sockaddr_in*)saddr;
 

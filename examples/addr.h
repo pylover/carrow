@@ -9,12 +9,11 @@
 
 
 int
-carrow_sockaddr_parse(struct sockaddr *saddr, const char *addr, 
-        unsigned short port);
+sockaddr_parse(struct sockaddr *saddr, const char *addr, unsigned short port);
 
 
 char *
-carrow_sockaddr_dump(struct sockaddr *addr);
+sockaddr_dump(struct sockaddr *addr);
 
 
 #endif

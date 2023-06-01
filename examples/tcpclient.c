@@ -1,4 +1,3 @@
-#include "tcp.h"
 #include "tty.h"
 #include "carrow.h"
 
@@ -40,25 +39,6 @@ typedef struct tcpc {
 #define WORKING 99999999
 volatile int status = WORKING;
 static struct sigaction old_action;
-
-
-// struct tcpc_coro
-// errorA(struct tcpc_coro *self, struct tcpc *conn, int no) {
-//     struct tcpconn *conn = &(conn->conn);
-//     
-//     tcpc_evloop_unregister(STDIN_FILENO);
-//     tcpc_evloop_unregister(STDOUT_FILENO);
-//     if (conn->fd != -1) {
-//         tcpc_evloop_unregister(conn->fd);
-//     }
-//     
-//     if (conn->fd > 2) {
-//         close(conn->fd);
-//     }
-// 
-//     errno = 0;
-//     return tcpc_coro_stop();
-// }
 
 
 void 
