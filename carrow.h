@@ -59,15 +59,15 @@
 #define CDBG errno, __FILENAME__, __LINE__, __FUNCTION__
 #define CMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK) \
         || (errno == EINPROGRESS))
-#define CIN      EPOLLIN
-#define COUT     EPOLLOUT
-#define CET      EPOLLET
-#define CONCE    EPOLLONESHOT
-#define CRDHUP   EPOLLRDHUP
-#define CPRI     EPOLLPRI
-#define CERR     EPOLLERR
-#define CHUP     EPOLLHUP
-#define CWAKEUP  EPOLLWAKEUP
+#define CIN      EPOLLIN       // 1
+#define COUT     EPOLLOUT      // 4
+#define CET      EPOLLET       // -2147483648
+#define CONCE    EPOLLONESHOT  // 1073741824
+#define CRDHUP   EPOLLRDHUP    // 8192
+#define CPRI     EPOLLPRI      // 2
+#define CERR     EPOLLERR      // 8
+#define CHUP     EPOLLHUP      // 16
+#define CWAKEUP  EPOLLWAKEUP   // 536870912
 
 
 struct carrow_generic_coro {
@@ -115,6 +115,10 @@ carrow_evloop(volatile int *status);
 int
 carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state,
         carrow_generic_corofunc *handler);
+
+
+int
+carrow_handleinterrupts();
 
 
 #endif

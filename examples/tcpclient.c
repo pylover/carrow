@@ -6,7 +6,6 @@
 #include <mrb.h>
 
 #include <stdlib.h>
-#include <signal.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <string.h>
@@ -35,11 +34,6 @@ typedef struct tcpconn {
 
 #define PAGESIZE 4096
 #define BUFFSIZE (PAGESIZE * 32768)
-
-
-#define WORKING 99999999
-volatile int status = WORKING;
-static struct sigaction old_action;
 
 
 static void 
@@ -203,29 +197,14 @@ connectA(struct tcpconn_coro *self, struct tcpconn *conn) {
 }
 
 
-static void 
-sighandler(int s) {
-    PRINTE(CR);
-    status = EXIT_SUCCESS;
-}
-
-
-static void 
-catch_signal() {
-    struct sigaction new_action = {sighandler, 0, 0, 0, 0};
-    if (sigaction(SIGINT, &new_action, &old_action) != 0) {
-        FATAL("sigaction");
-    }
-}
-
-
 int
 main() {
     int ret = EXIT_SUCCESS;
     clog_verbosity = CLOG_DEBUG;
 
-    /* Signal */
-    catch_signal();
+    if (carrow_handleinterrupts()) {
+        return EXIT_FAILURE;
+    }
 
     /* Non blocking starndard input/output */
     if (stdin_nonblock() || stdout_nonblock()) {
@@ -244,7 +223,7 @@ main() {
         return EXIT_FAILURE;
     }
 
-    ret = tcpconn_forever(connectA, &conn, &status);
+    ret = tcpconn_forever(connectA, &conn, NULL);
     if (mrb_destroy(conn.inbuff) || mrb_destroy(conn.outbuff)) {
         ERROR("Cannot dispose buffers.");
         ret = EXIT_FAILURE;

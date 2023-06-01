@@ -1,15 +1,19 @@
 #include "carrow.h"
 
 #include <errno.h>
+#include <signal.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/epoll.h>
 
 
+static volatile int _carrow_status = 99999;
+static volatile int *_carrow_status_ptr = NULL;
 static unsigned int _openmax;
 static struct evbag **_evbags;
-volatile unsigned int _evbagscount;
+static volatile unsigned int _evbagscount;
 static int _epollfd = -1;
 
 
@@ -229,6 +233,28 @@ carrow_evloop_unregister(int fd) {
 }
 
 
+static struct sigaction old_action;
+
+
+static void 
+sighandler(int s) {
+    printf("\n");
+    _carrow_status = EXIT_SUCCESS;
+}
+
+
+int
+carrow_handleinterrupts() {
+    struct sigaction new_action = {sighandler, 0, 0, 0, 0};
+    if (sigaction(SIGINT, &new_action, &old_action) != 0) {
+        return -1;
+    }
+
+    _carrow_status_ptr = &_carrow_status;
+    return 0;
+}
+
+
 int
 carrow_evloop(volatile int *status) {
     int i;
@@ -238,6 +264,10 @@ carrow_evloop(volatile int *status) {
     struct evbag *bag;
     struct epoll_event ee;
     struct epoll_event events[_openmax];
+    
+    if ((status == NULL) && (_carrow_status_ptr != NULL)) {
+        status = _carrow_status_ptr;
+    }
 
 evloop:
     while (_evbagscount && ((status == NULL) || (*status > EXIT_FAILURE))) {

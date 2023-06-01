@@ -3,7 +3,6 @@
 #include <clog.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>
 #include <sys/timerfd.h>
 
 
@@ -18,27 +17,6 @@ typedef struct timer {
 #define CARROW_ENTITY timer
 #include "carrow_generic.h"
 #include "carrow_generic.c"
-
-
-#define WORKING 99999999
-volatile int status = WORKING;
-static struct sigaction old_action;
-
-
-static void 
-sighandler(int s) {
-    PRINTE(CR);
-    status = EXIT_SUCCESS;
-}
-
-
-static void 
-catch_signal() {
-    struct sigaction new_action = {sighandler, 0, 0, 0, 0};
-    if (sigaction(SIGINT, &new_action, &old_action) != 0) {
-        FATAL("sigaction");
-    }
-}
 
 
 static int
@@ -87,7 +65,11 @@ timerA(struct timer_coro *self, struct timer *state) {
 int
 main() {
     clog_verbosity = CLOG_DEBUG;
-    catch_signal();
+
+    if (carrow_handleinterrupts()) {
+        return EXIT_FAILURE;
+    }
+    
     struct timer state1 = {
         .title = "Foo", 
         .interval = 1,
@@ -102,6 +84,6 @@ main() {
     carrow_init(0);
     timer_coro_create_and_run(timerA, &state1);
     timer_coro_create_and_run(timerA, &state2);
-    carrow_evloop(&status);
+    carrow_evloop(NULL);
     carrow_deinit();
 }
