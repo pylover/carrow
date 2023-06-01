@@ -44,7 +44,7 @@ static struct sigaction old_action;
 
 void 
 ioA(struct tcpc_coro *self, struct tcpc *conn) {
-    ssize_t bytes;
+    ssize_t bytes = 0;
     struct mrb *in = conn->inbuff;
     struct mrb *out = conn->outbuff;
     CORO_START;
