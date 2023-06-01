@@ -1,5 +1,6 @@
 #include "tty.h"
 #include "carrow.h"
+#include "addr.h"
 
 #include <clog.h>
 #include <mrb.h>
@@ -185,6 +186,8 @@ connectA(struct tcpc_coro *self, struct tcpc *conn) {
     if (getsockname(conn->fd, &(conn->localaddr), &socksize)) {
         CORO_REJECT("getsockname");
     }
+    INFON("Connected: %s", sockaddr_dump(&conn->localaddr));
+    INFOH(" -> %s", sockaddr_dump(&conn->remoteaddr));
 
     CORO_FINALLY;
     if (errno != 0) {
