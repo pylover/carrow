@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
 project(carrow 
-    VERSION 5.1.0
+    VERSION 5.2.0
     LANGUAGES C
 )
 

@@ -145,4 +145,8 @@ carrow_sleep(struct carrow_generic_coro *self, unsigned int seconds,
         int line);
 
 
+void
+carrow_trigger(int fd, int events);
+
+
 #endif

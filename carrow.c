@@ -101,8 +101,8 @@ carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state,
 }
 
 
-static void
-carrow_evbag_resolve(int fd, int events) {
+void
+carrow_trigger(int fd, int events) {
     if (fd >= _openmax) {
         return;
     }
@@ -308,13 +308,13 @@ evloop:
         for (i = 0; i < nfds; i++) {
             ee = events[i];
             fd = ee.data.fd;
-            carrow_evbag_resolve(fd, ee.events);
+            carrow_trigger(fd, ee.events);
         }
     }
 
 terminate:
     for (fd = 0; fd < _openmax; fd++) {
-        carrow_evbag_resolve(fd, 0);
+        carrow_trigger(fd, 0);
     }
 
     if (_evbagscount && ((status == NULL) || (*status > EXIT_FAILURE))) {
