@@ -17,7 +17,6 @@ CARROW_NAME(coro_stop) () {
     return (CARROW_NAME(coro)){NULL, -1, -1, -1};
 }
 
-
 void
 CARROW_NAME(coro_run) (CARROW_NAME(coro) *self, CARROW_ENTITY *state) {
     if (self->run == NULL) {

@@ -101,17 +101,17 @@ carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state,
 }
 
 
-void
+int
 carrow_trigger(int fd, int events) {
     if (fd >= _openmax) {
-        return;
+        return -1;
     }
     struct evbag *bag = _evbags[fd];
     struct carrow_generic_coro c;
     
     if (bag == NULL) {
         /* Event already removed */
-        return;
+        return -1;
     }
     
     memcpy(&c, &bag->coro, sizeof(struct carrow_generic_coro));
@@ -119,6 +119,7 @@ carrow_trigger(int fd, int events) {
     c.fd = fd;
     c.events = events;
     bag->handler(&c, bag->state);
+    return 0;
 }
 
 
