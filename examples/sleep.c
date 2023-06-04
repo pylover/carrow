@@ -22,7 +22,10 @@ fooA(struct foo_coro *self, struct foo *state) {
     CORO_START;
     
     while (true) {
-        INFO("%u", state->counter++);
+        INFO("Flip: %u", state->counter++);
+        CORO_SLEEP(1); // One second
+
+        INFO("Flop: %u", state->counter++);
         CORO_SLEEP(1); // One second
     }
 
