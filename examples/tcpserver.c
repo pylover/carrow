@@ -126,11 +126,6 @@ listenA(struct tcpserver_coro *self, struct tcpserver *state) {
   
     while (true) {
         CORO_WAIT(fd, CIN);
-        if (self->events == 0) {
-            /* Terminating */
-            CORO_REJECT("Terminating");
-        }
-
         connfd = accept4(fd, &connaddr, &addrlen, SOCK_NONBLOCK);
         if ((connfd == -1) && (!CMUSTWAIT())) {
             CORO_REJECT("accept4");

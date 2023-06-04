@@ -20,13 +20,13 @@ typedef struct foo {
 static void
 fooA(struct foo_coro *self, struct foo *state) {
     CORO_START;
-    
+
     while (true) {
         INFO("Flip: %u", state->counter++);
-        CORO_SLEEP(1); // One second
+        CORO_SLEEP(1);
 
         INFO("Flop: %u", state->counter++);
-        CORO_SLEEP(1); // One second
+        CORO_SLEEP(1);
     }
 
     CORO_FINALLY;
