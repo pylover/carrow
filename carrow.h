@@ -24,7 +24,7 @@
         self->fd = f; \
         self->events = e | CONCE; \
         return; \
-        case __LINE__: \
+        case __LINE__:; \
     } while (0)
 
 
