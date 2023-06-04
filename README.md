@@ -22,6 +22,11 @@ make clean all
 
 ### Running examples
 
+#### Dependencies: 
+
+- https://github.com/pylover/clog
+
+
 ```bash
 cd path/to/carrow/build
 make run_tcpclient
