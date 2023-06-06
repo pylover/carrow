@@ -86,4 +86,6 @@ main() {
     timer_coro_create_and_run(timerA, &state2);
     carrow_evloop(NULL);
     carrow_deinit();
+
+    return EXIT_SUCCESS;
 }

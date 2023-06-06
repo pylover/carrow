@@ -260,7 +260,7 @@ carrow_sleep(struct carrow_generic_coro *self, unsigned int seconds,
 
 
 static void 
-sighandler(int s) {
+_sighandler(int s) {
     printf("\n");
     _carrow_status = EXIT_SUCCESS;
 }
@@ -268,7 +268,7 @@ sighandler(int s) {
 
 int
 carrow_handleinterrupts() {
-    struct sigaction new_action = {sighandler, 0, 0, 0, 0};
+    struct sigaction new_action = {_sighandler, 0, 0, 0, 0};
     if (sigaction(SIGINT, &new_action, &old_action) != 0) {
         return -1;
     }
