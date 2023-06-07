@@ -24,6 +24,21 @@ install(FILES carrow_generic.h DESTINATION "include")
 install(FILES carrow_generic.c DESTINATION "include")
 
 
+# Lint
+set(CPPLINT_FLAGS
+    --recursive
+    --verbose 0
+    --repository .
+    --extensions c,h,in
+    #--quiet
+    ${PROJECT_SOURCE_DIR}
+)
+add_custom_target(lint
+    COMMAND cpplint
+    ${CPPLINT_FLAGS}
+)
+
+
 # CPack
 set(CPACK_PACKAGE_FILE_NAME "libcarrow-${PROJECT_VERSION}")
 set(CPACK_SET_DESTDIR true)
@@ -40,6 +55,15 @@ list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
 
 # Valgrind, Profiling
+set(VALGRIND_FLAGS
+    -s
+    --tool=memcheck 
+    --leak-check=yes 
+    --show-reachable=yes 
+    --num-callers=20 
+    --track-fds=yes 
+)
+
 add_custom_target(profile 
     DEPENDS 
     profile_test_carrow

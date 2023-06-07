@@ -1,3 +1,21 @@
+// copyright 2023 vahid mardani
+/*
+ * this file is part of carrow.
+ *  carrow is free software: you can redistribute it and/or modify it under 
+ *  the terms of the gnu general public license as published by the free 
+ *  software foundation, either version 3 of the license, or (at your option) 
+ *  any later version.
+ *  
+ *  carrow is distributed in the hope that it will be useful, but without any 
+ *  warranty; without even the implied warranty of merchantability or fitness 
+ *  for a particular purpose. see the gnu general public license for more 
+ *  details.
+ *  
+ *  you should have received a copy of the gnu general public license along 
+ *  with carrow. if not, see <https://www.gnu.org/licenses/>. 
+ *  
+ *  author: vahid mardani <vahid.mardani@gmail.com>
+ */
 #include "carrow.h"
 
 #include <errno.h>
@@ -65,16 +83,16 @@ evbag_delete(int fd) {
     if (bag == NULL) {
         return -1;
     }
-    
+
     free(bag);
     _evbagscount--;
-    _evbags[fd] = NULL; 
+    _evbags[fd] = NULL;
     return 0;
 }
 
 
 int
-carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state, 
+carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state,
         carrow_generic_corofunc *handler) {
     if (fd >= _openmax) {
         return -1;
@@ -96,7 +114,7 @@ carrow_evbag_unpack(int fd, struct carrow_generic_coro *coro, void **state,
     if (handler != NULL) {
         *handler = bag->handler;
     }
-   
+
     return 0;
 }
 
@@ -108,12 +126,12 @@ carrow_trigger(int fd, int events) {
     }
     struct evbag *bag = _evbags[fd];
     struct carrow_generic_coro c;
-    
+
     if (bag == NULL) {
         /* Event already removed */
         return -1;
     }
-    
+
     memcpy(&c, &bag->coro, sizeof(struct carrow_generic_coro));
 
     c.fd = fd;
@@ -131,7 +149,7 @@ evbags_init() {
         errno = ENOMEM;
         return -1;
     }
-    
+
     memset(_evbags, 0, sizeof(struct evbag*) * _openmax);
     return 0;
 }
@@ -146,10 +164,10 @@ evbags_deinit() {
 
 int
 carrow_init(unsigned int openmax) {
-    if (_epollfd != -1 ) {
+    if (_epollfd != -1) {
         return -1;
     }
-   
+
     /* Find maximum allowed openfiles */
     if (openmax != 0) {
         _openmax = openmax;
@@ -167,13 +185,13 @@ carrow_init(unsigned int openmax) {
     if (_epollfd < 0) {
         return -1;
     }
-    
+
     return 0;
 }
 
 
 int
-carrow_evloop_register(void *coro, void *state, int fd, int events, 
+carrow_evloop_register(void *coro, void *state, int fd, int events,
         carrow_generic_corofunc handler) {
     struct epoll_event ee;
 
@@ -194,10 +212,10 @@ carrow_evloop_register(void *coro, void *state, int fd, int events,
 
 
 int
-carrow_evloop_modify(void *coro, void *state, int fd, int events, 
+carrow_evloop_modify(void *coro, void *state, int fd, int events,
         carrow_generic_corofunc handler) {
     struct epoll_event ee;
-   
+
     if (EVBAG_ISNULL(fd)) {
         return -1;
     }
@@ -218,13 +236,13 @@ carrow_evloop_modify(void *coro, void *state, int fd, int events,
 
 
 int
-carrow_evloop_modify_or_register(void *coro, void *state, int fd, int events, 
+carrow_evloop_modify_or_register(void *coro, void *state, int fd, int events,
         carrow_generic_corofunc handler) {
-    
+
     if (EVBAG_ISNULL(fd)) {
         return carrow_evloop_register(coro, state, fd, events, handler);
     }
-    
+
     return carrow_evloop_modify(coro, state, fd, events, handler);
 }
 
@@ -237,13 +255,13 @@ carrow_evloop_unregister(int fd) {
 
 
 int
-carrow_sleep(struct carrow_generic_coro *self, unsigned int seconds, 
+carrow_sleep(struct carrow_generic_coro *self, unsigned int seconds,
         int line) {
     int fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
     if (fd == -1) {
         return -1;
     }
-    
+
     struct timespec sec = {seconds, 0};
     struct timespec zero = {0, 0};
     struct itimerspec spec = {zero, sec};
@@ -251,15 +269,15 @@ carrow_sleep(struct carrow_generic_coro *self, unsigned int seconds,
         close(fd);
         return -1;
     }
-    
-    self->fd = fd; 
+
+    self->fd = fd;
     self->events = CIN | CONCE;
     self->line = line;
     return 0;
 }
 
 
-static void 
+static void
 _sighandler(int s) {
     printf("\n");
     _carrow_status = EXIT_SUCCESS;
@@ -287,7 +305,7 @@ carrow_evloop(volatile int *status) {
     struct evbag *bag;
     struct epoll_event ee;
     struct epoll_event events[_openmax];
-    
+
     if ((status == NULL) && (_carrow_status_ptr != NULL)) {
         status = _carrow_status_ptr;
     }

@@ -22,7 +22,7 @@ make clean all
 
 ### Running examples
 
-#### Dependencies: 
+#### Example Dependencies: 
 
 - https://github.com/pylover/clog
 - https://github.com/pylover/mrb
@@ -41,4 +41,11 @@ make profile_timer
 
 make run_sleep
 make profile_sleep
+```
+
+### Contirbution
+
+```bash
+pip install cpplint
+make lint
 ```

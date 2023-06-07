@@ -1,3 +1,21 @@
+// copyright 2023 vahid mardani
+/*
+ * this file is part of carrow.
+ *  carrow is free software: you can redistribute it and/or modify it under 
+ *  the terms of the gnu general public license as published by the free 
+ *  software foundation, either version 3 of the license, or (at your option) 
+ *  any later version.
+ *  
+ *  carrow is distributed in the hope that it will be useful, but without any 
+ *  warranty; without even the implied warranty of merchantability or fitness 
+ *  for a particular purpose. see the gnu general public license for more 
+ *  details.
+ *  
+ *  you should have received a copy of the gnu general public license along 
+ *  with carrow. if not, see <https://www.gnu.org/licenses/>. 
+ *  
+ *  author: vahid mardani <vahid.mardani@gmail.com>
+ */
 #include "tty.h"
 #include "carrow.h"
 #include "addr.h"
@@ -36,7 +54,7 @@ typedef struct tcpconn {
 #define BUFFSIZE (PAGESIZE * 32768)
 
 
-static void 
+static void
 ioA(struct tcpconn_coro *self, struct tcpconn *conn) {
     ssize_t bytes = 0;
     struct mrb *in = conn->inbuff;
@@ -54,7 +72,7 @@ ioA(struct tcpconn_coro *self, struct tcpconn *conn) {
         if (bytes <= 0) {
             CORO_REJECT("read(stdin)");
         }
-        
+
         /* tcp write */
         CORO_WAIT(conn->fd, COUT);
         bytes = mrb_writeout(out, conn->fd, mrb_used(out));
@@ -91,13 +109,13 @@ ioA(struct tcpconn_coro *self, struct tcpconn *conn) {
         tcpconn_evloop_unregister(conn->fd);
         close(conn->fd);
     }
-    
+
     errno = 0;
     CORO_END;
 }
 
 
-static void 
+static void
 connectA(struct tcpconn_coro *self, struct tcpconn *conn) {
     int err = 0;
     int optlen = 4;
@@ -124,7 +142,7 @@ connectA(struct tcpconn_coro *self, struct tcpconn *conn) {
        and) try the next address.
     */
     for (try = result; try != NULL; try = try->ai_next) {
-        cfd = socket(try->ai_family, try->ai_socktype | SOCK_NONBLOCK, 
+        cfd = socket(try->ai_family, try->ai_socktype | SOCK_NONBLOCK,
                 try->ai_protocol);
         if (cfd < 0) {
             continue;
@@ -189,7 +207,7 @@ connectA(struct tcpconn_coro *self, struct tcpconn *conn) {
             tcpconn_evloop_unregister(conn->fd);
             close(conn->fd);
         }
-        
+
         errno = 0;
         CORO_END;
     }
@@ -215,7 +233,7 @@ main() {
         .hostname = "localhost",
         .port = "3030",
     };
-    
+
     conn.inbuff = mrb_create(BUFFSIZE);
     conn.outbuff = mrb_create(BUFFSIZE);
     if (conn.inbuff == NULL || conn.outbuff == NULL) {

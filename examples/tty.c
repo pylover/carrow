@@ -1,3 +1,21 @@
+// copyright 2023 vahid mardani
+/*
+ * this file is part of carrow.
+ *  carrow is free software: you can redistribute it and/or modify it under 
+ *  the terms of the gnu general public license as published by the free 
+ *  software foundation, either version 3 of the license, or (at your option) 
+ *  any later version.
+ *  
+ *  carrow is distributed in the hope that it will be useful, but without any 
+ *  warranty; without even the implied warranty of merchantability or fitness 
+ *  for a particular purpose. see the gnu general public license for more 
+ *  details.
+ *  
+ *  you should have received a copy of the gnu general public license along 
+ *  with carrow. if not, see <https://www.gnu.org/licenses/>. 
+ *  
+ *  author: vahid mardani <vahid.mardani@gmail.com>
+ */
 #include "tty.h"
 
 #include <clog.h>
@@ -18,18 +36,18 @@ static void
 stdin_restore() {
     if (!dirty) {
         return;
-    };
-    
+    }
+
     if (tcsetattr(STDIN_FILENO, TCSANOW, &ttysave)) {
         ERROR("Cannot restore tty attributes");
     }
 }
 
 
-static int 
+static int
 stdin_noncanonical() {
     struct termios ttystate;
-    
+
     // preserve  the terminal state
     if (tcgetattr(STDIN_FILENO, &ttystate)) {
         ERROR("Cannot get tty attributes");
@@ -45,12 +63,12 @@ stdin_noncanonical() {
     ttystate.c_cc[VMIN] = 0;
     ttystate.c_cc[VTIME] = 1;
 
-    //set the terminal attributes.
+    // set the terminal attributes.
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &ttystate)) {
         ERROR("Cannot set tty attributes");
         return -1;
     }
-    
+
     return 0;
 }
 
@@ -64,7 +82,7 @@ _nonblock(int fd) {
     }
 
     int status = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
-    if (status == -1){
+    if (status == -1) {
         return -1;
     }
 
@@ -77,7 +95,7 @@ stdin_nonblock() {
     if (_nonblock(STDIN_FILENO)) {
         return -1;
     }
-    
+
     return stdin_noncanonical();
 }
 

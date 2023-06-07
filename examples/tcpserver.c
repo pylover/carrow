@@ -1,3 +1,21 @@
+// copyright 2023 vahid mardani
+/*
+ * this file is part of carrow.
+ *  carrow is free software: you can redistribute it and/or modify it under 
+ *  the terms of the gnu general public license as published by the free 
+ *  software foundation, either version 3 of the license, or (at your option) 
+ *  any later version.
+ *  
+ *  carrow is distributed in the hope that it will be useful, but without any 
+ *  warranty; without even the implied warranty of merchantability or fitness 
+ *  for a particular purpose. see the gnu general public license for more 
+ *  details.
+ *  
+ *  you should have received a copy of the gnu general public license along 
+ *  with carrow. if not, see <https://www.gnu.org/licenses/>. 
+ *  
+ *  author: vahid mardani <vahid.mardani@gmail.com>
+ */
 #include "tty.h"
 #include "carrow.h"
 
@@ -67,7 +85,7 @@ echoA(struct tcpconn_coro *self, struct tcpconn *conn) {
         if (mrb_isempty(buff)) {
             continue;
         }
-        
+
         CORO_WAIT(conn->fd, COUT);
         bytes = mrb_writeout(buff, conn->fd, mrb_used(buff));
         if (bytes <= 0) {
@@ -101,10 +119,10 @@ listenA(struct tcpserver_coro *self, struct tcpserver *state) {
     int res;
     int option = 1;
     CORO_START;
-    
+
     /* Parse listen address */
     sockaddr_parse(&bindaddr, state->bindaddr, state->bindport);
-    
+
     /* Create socket */
     fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
@@ -112,18 +130,18 @@ listenA(struct tcpserver_coro *self, struct tcpserver *state) {
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 
     /* Bind to tcp port */
-    res = bind(fd, &bindaddr, sizeof(bindaddr)); 
+    res = bind(fd, &bindaddr, sizeof(bindaddr));
     if (res) {
         CORO_REJECT("Cannot bind on: %s", sockaddr_dump(&bindaddr));
     }
 
     /* Listen */
-    res = listen(fd, state->backlog); 
+    res = listen(fd, state->backlog);
     INFO("Listening on: %s", sockaddr_dump(&bindaddr));
     if (res) {
         CORO_REJECT("Cannot listen on: %s", sockaddr_dump(&bindaddr));
     }
-  
+
     while (true) {
         CORO_WAIT(fd, CIN);
         connfd = accept4(fd, &connaddr, &addrlen, SOCK_NONBLOCK);
@@ -164,6 +182,6 @@ main() {
         .bindport = 3030,
         .backlog = 2,
     };
-    
+
     return tcpserver_forever(listenA, &state, NULL);
 }
