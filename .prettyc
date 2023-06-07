@@ -1,6 +1,5 @@
 set noparent
-filter=-build/include,+build/include_order,-runtime/int
-filter=-readability/braces
+# filter=-readability/braces
 filter=-whitespace/newline,-whitespace/blank_line
 exclude_files=build
 linelength=80

@@ -34,7 +34,7 @@ set(CPPLINT_FLAGS
     ${PROJECT_SOURCE_DIR}
 )
 add_custom_target(lint
-    COMMAND cpplint
+    COMMAND prettyc
     ${CPPLINT_FLAGS}
 )
 

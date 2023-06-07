@@ -46,6 +46,7 @@ make profile_sleep
 ### Contirbution
 
 ```bash
-pip install cpplint
+pip install prettyc
+cd path/to/carrow/build
 make lint
 ```

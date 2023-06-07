@@ -16,16 +16,16 @@
  *  
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#include "tty.h"
-
-#include <clog.h>
-
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <termios.h>
 #include <stdbool.h>
+
+#include <clog.h>
+
+#include "tty.h"
 
 
 static bool dirty = false;

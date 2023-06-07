@@ -59,7 +59,7 @@
 
 
 #define CORO_FINALLY \
-    }; \
+    } \
     carrow_finally:
 
 

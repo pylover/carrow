@@ -26,13 +26,13 @@
 
 CARROW_NAME(coro)
 CARROW_NAME(coro_create) (CARROW_NAME(corofunc) f) {
-    return (CARROW_NAME(coro)){f, 0, -1, -1};
+    return (CARROW_NAME(coro)){f, 0, -1, -1};  // NOLINT
 }
 
 
 CARROW_NAME(coro)
 CARROW_NAME(coro_stop) () {
-    return (CARROW_NAME(coro)){NULL, -1, -1, -1};
+    return (CARROW_NAME(coro)){NULL, -1, -1, -1};  // NOLINT
 }
 
 

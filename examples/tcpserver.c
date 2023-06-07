@@ -16,17 +16,16 @@
  *  
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#include "tty.h"
-#include "carrow.h"
-
-#include "addr.h"
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/socket.h>
 
 #include <mrb.h>
 #include <clog.h>
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/socket.h>
+#include "tty.h"
+#include "carrow.h"
+#include "addr.h"
 
 
 /* TCP server carrow types and function */
@@ -54,8 +53,8 @@ typedef struct tcpconn {
 
 #undef CARROW_ENTITY
 #define CARROW_ENTITY tcpconn
-#include "carrow_generic.h"
-#include "carrow_generic.c"
+#include "carrow_generic.h"  // NOLINT
+#include "carrow_generic.c"  // NOLINT
 
 
 #define PAGESIZE 4096

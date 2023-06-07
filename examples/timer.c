@@ -16,12 +16,13 @@
  *  
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#include "carrow.h"
-
-#include <clog.h>
+#include <sys/timerfd.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/timerfd.h>
+
+#include <clog.h>
+
+#include "carrow.h"
 
 
 typedef struct timer {

@@ -16,13 +16,6 @@
  *  
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#include "tty.h"
-#include "carrow.h"
-#include "addr.h"
-
-#include <clog.h>
-#include <mrb.h>
-
 #include <stdlib.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -30,6 +23,13 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+
+#include <clog.h>
+#include <mrb.h>
+
+#include "tty.h"
+#include "carrow.h"
+#include "addr.h"
 
 
 typedef struct tcpconn {
