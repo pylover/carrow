@@ -1,6 +1,5 @@
 set noparent
-# filter=-readability/braces
-filter=-whitespace/newline,-whitespace/blank_line
+# filter=-whitespace/newline,-whitespace/blank_line
 exclude_files=build
 linelength=80
 root=.

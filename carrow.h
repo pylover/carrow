@@ -28,7 +28,8 @@
 /* Coroutine */
 #define CORO_START \
     if (self->events == 0) goto carrow_finally; \
-    switch (self->line) { case 0:
+    switch (self->line) { \
+        case 0:
 
 
 #define CORO_REJECT(...) \

@@ -238,7 +238,6 @@ carrow_evloop_modify(void *coro, void *state, int fd, int events,
 int
 carrow_evloop_modify_or_register(void *coro, void *state, int fd, int events,
         carrow_generic_corofunc handler) {
-
     if (EVBAG_ISNULL(fd)) {
         return carrow_evloop_register(coro, state, fd, events, handler);
     }
