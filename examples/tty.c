@@ -1,20 +1,20 @@
-// copyright 2023 vahid mardani
+// Copyright 2023 Vahid Mardani
 /*
- * this file is part of carrow.
- *  carrow is free software: you can redistribute it and/or modify it under 
- *  the terms of the gnu general public license as published by the free 
- *  software foundation, either version 3 of the license, or (at your option) 
+ * This file is part of Carrow.
+ *  Carrow is free software: you can redistribute it and/or modify it under 
+ *  the terms of the GNU General Public License as published by the Free 
+ *  Software Foundation, either version 3 of the License, or (at your option) 
  *  any later version.
  *  
- *  carrow is distributed in the hope that it will be useful, but without any 
- *  warranty; without even the implied warranty of merchantability or fitness 
- *  for a particular purpose. see the gnu general public license for more 
+ *  Carrow is distributed in the hope that it will be useful, but WITHOUT ANY 
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ *  FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
  *  details.
  *  
- *  you should have received a copy of the gnu general public license along 
- *  with carrow. if not, see <https://www.gnu.org/licenses/>. 
+ *  You should have received a copy of the GNU General Public License along 
+ *  with Carrow. If not, see <https://www.gnu.org/licenses/>. 
  *  
- *  author: vahid mardani <vahid.mardani@gmail.com>
+ *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
 #include "tty.h"
 
