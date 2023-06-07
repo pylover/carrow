@@ -31,8 +31,8 @@ typedef struct foo {
 
 #undef CARROW_ENTITY
 #define CARROW_ENTITY foo
-#include "carrow_generic.h"
-#include "carrow_generic.c"
+#include "carrow_generic.h"  // NOLINT
+#include "carrow_generic.c"  // NOLINT
 
 
 void

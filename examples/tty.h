@@ -16,8 +16,8 @@
  *  
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef TTY_H
-#define TTY_H
+#ifndef EXAMPLES_TTY_H_
+#define EXAMPLES_TTY_H_
 
 
 int
@@ -28,4 +28,4 @@ int
 stdout_nonblock();
 
 
-#endif
+#endif  // EXAMPLES_TTY_H_

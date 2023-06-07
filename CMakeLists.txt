@@ -27,9 +27,13 @@ install(FILES carrow_generic.c DESTINATION "include")
 # Lint
 set(CPPLINT_FLAGS
     --recursive
-    --verbose 0
-    --repository .
-    --extensions c,h,in
+    --verbose=0
+    --repository=.
+    --extensions=c,h,in
+    --linelength=80
+    --headers=h,in
+    --includeorder=standardcfirst
+    --root=.
     #--quiet
     ${PROJECT_SOURCE_DIR}
 )

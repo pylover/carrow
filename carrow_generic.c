@@ -16,7 +16,7 @@
  *  
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#include "carrow.h"
+#include "carrow.h"  // NOLINT
 
 #include <stdarg.h>
 #include <unistd.h>

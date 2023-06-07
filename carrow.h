@@ -16,8 +16,8 @@
  *  
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef CARROW_H
-#define CARROW_H
+#ifndef CARROW_H_
+#define CARROW_H_
 
 
 #include <stdbool.h>
@@ -168,4 +168,4 @@ int
 carrow_trigger(int fd, int events);
 
 
-#endif
+#endif  // CARROW_H_

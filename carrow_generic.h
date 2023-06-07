@@ -16,7 +16,7 @@
  *  
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
  */
-#ifndef CARROW_H
+#ifndef CARROW_H_  // NOLINT(build/header_guard)
 #error "carrow.h and clog.h must be imported before importing the" \
     "carrow_generic.h"
 #error "And also #undef and #define CARROW_ENTITY before importing the " \
