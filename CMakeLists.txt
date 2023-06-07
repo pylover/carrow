@@ -25,7 +25,7 @@ install(FILES carrow_generic.c DESTINATION "include")
 
 
 # Lint
-set(CPPLINT_FLAGS
+set(PRETTYC_FLAGS
     --recursive
     --verbose=0
     --repository=.
@@ -39,7 +39,7 @@ set(CPPLINT_FLAGS
 )
 add_custom_target(lint
     COMMAND prettyc
-    ${CPPLINT_FLAGS}
+    ${PRETTYC_FLAGS}
 )
 
 
