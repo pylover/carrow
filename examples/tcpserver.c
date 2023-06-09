@@ -15,6 +15,9 @@
  *  with Carrow. If not, see <https://www.gnu.org/licenses/>. 
  *  
  *  Author: Vahid Mardani <vahid.mardani@gmail.com>
+ * 
+ * 
+ * An edge-triggered(epoll(7)) example using carrow.
  */
 #include <stdlib.h>
 #include <unistd.h>
@@ -66,33 +69,49 @@ echoA(struct tcpconn_coro *self, struct tcpconn *conn) {
     ssize_t bytes;
     struct mrb *buff = conn->buff;
     CORO_START;
-    DEBUG("New conn: %s", sockaddr_dump(&conn->remoteaddr));
+    static int e = 0;
+    INFO("New conn: %s", sockaddr_dump(&conn->remoteaddr));
 
     while (true) {
-        if (mrb_isfull(buff)) {
-            CORO_REJECT("connection: %d buff full", conn->fd);
+        e = CET;
+
+        /* tcp write */
+        while (!mrb_isempty(buff)) {
+            /* Write as mush as possible until EAGAIN */
+            bytes = mrb_writeout(buff, conn->fd, mrb_used(buff));
+            if ((bytes == -1) && CMUSTWAIT()) {
+                e |= COUT;
+                break;
+            }
+            else if (bytes == -1) {
+                CORO_REJECT("write(%d)", conn->fd);
+            }
+            else if (bytes == 0) {
+                CORO_REJECT("write(%d) EOF", conn->fd);
+            }
         }
 
         /* tcp read */
-        CORO_WAIT(conn->fd, CIN);
-        bytes = mrb_readin(buff, conn->fd, mrb_available(buff));
-        if (bytes <= 0) {
-            CORO_REJECT("read(%d)", conn->fd);
+        while (!mrb_isfull(buff)) {
+            /* Read as mush as possible until EAGAIN */
+            bytes = mrb_readin(buff, conn->fd, mrb_available(buff));
+            if ((bytes == -1) && CMUSTWAIT()) {
+                e |= CIN;
+                break;
+            }
+            else if (bytes == -1) {
+                CORO_REJECT("read(%d)", conn->fd);
+            }
+            else if (bytes == 0) {
+                CORO_REJECT("read(%d) EOF", conn->fd);
+            }
         }
 
-        /* tcp write */
-        if (mrb_isempty(buff)) {
-            continue;
-        }
-
-        CORO_WAIT(conn->fd, COUT);
-        bytes = mrb_writeout(buff, conn->fd, mrb_used(buff));
-        if (bytes <= 0) {
-            CORO_REJECT("write(%d)", conn->fd);
-        }
-
-        /* reset errno and rewait events*/
+        /* reset errno and rewait events if neccessary */
         errno = 0;
+        if (mrb_isempty(buff) || (e & COUT)) {
+            CORO_WAIT(conn->fd, e);
+        }
     }
 
     CORO_FINALLY;
@@ -142,9 +161,13 @@ listenA(struct tcpserver_coro *self, struct tcpserver *state) {
     }
 
     while (true) {
-        CORO_WAIT(fd, CIN);
         connfd = accept4(fd, &connaddr, &addrlen, SOCK_NONBLOCK);
-        if ((connfd == -1) && (!CMUSTWAIT())) {
+        if ((connfd == -1) && CMUSTWAIT()) {
+            CORO_WAIT(fd, CIN | CET);
+            continue;
+        }
+
+        if (connfd == -1) {
             CORO_REJECT("accept4");
         }
 
