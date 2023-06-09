@@ -41,8 +41,8 @@ typedef struct tcpserver {
 
 #undef CARROW_ENTITY
 #define CARROW_ENTITY tcpserver
-#include "carrow_generic.h"
-#include "carrow_generic.c"
+#include "carrow_generic.h"  // NOLINT
+#include "carrow_generic.c"  // NOLINT
 
 
 /* TCP connection carrow types and function */

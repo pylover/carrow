@@ -81,7 +81,8 @@
     if (self->fd != -1) { \
         carrow_evloop_unregister(self->fd); \
         close(self->fd); \
-    } CORO_END
+    } \
+    CORO_END
 
 
 /* Generic stuff */
