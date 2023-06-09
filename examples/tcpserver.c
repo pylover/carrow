@@ -76,8 +76,8 @@ echoA(struct tcpconn_coro *self, struct tcpconn *conn) {
         e = CET;
 
         /* tcp write */
+        /* Write as mush as possible until EAGAIN */
         while (!mrb_isempty(buff)) {
-            /* Write as mush as possible until EAGAIN */
             bytes = mrb_writeout(buff, conn->fd, mrb_used(buff));
             if ((bytes == -1) && CMUSTWAIT()) {
                 e |= COUT;
@@ -92,8 +92,8 @@ echoA(struct tcpconn_coro *self, struct tcpconn *conn) {
         }
 
         /* tcp read */
+        /* Read as mush as possible until EAGAIN */
         while (!mrb_isfull(buff)) {
-            /* Read as mush as possible until EAGAIN */
             bytes = mrb_readin(buff, conn->fd, mrb_available(buff));
             if ((bytes == -1) && CMUSTWAIT()) {
                 e |= CIN;
