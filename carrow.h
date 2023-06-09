@@ -118,6 +118,7 @@ struct carrow_generic_coro {
     int events; // event mask
 };
 
+
 /* A function pointer type representing a coroutine handler function. */
 typedef void (*carrow_generic_corofunc) (void *coro, void *state);
 
@@ -132,6 +133,7 @@ carrow_init(unsigned int openmax);
 void
 carrow_deinit();
 
+
 /* A function that registers a coroutine with the event loop for a given file
    descriptor and event mask. It sets the evbag for the given file descriptor
    with the provided coroutine state and handler function, and adds the file
@@ -139,6 +141,7 @@ carrow_deinit();
 int
 carrow_evloop_register(void *coro, void *state, int fd, int events,
         carrow_generic_corofunc handler);
+
 
 /* A function that modifies the coroutine state and handler function for a
    given file descriptor in the event loop. */
@@ -154,10 +157,12 @@ int
 carrow_evloop_modify_or_register(void *coro, void *state, int fd, int events,
         carrow_generic_corofunc handler);
 
+
 /* A function that unregisters a coroutine for a given file descriptor from
    the event loop and deletes its evbag. */
 int
 carrow_evloop_unregister(int fd);
+
 
 /* A function that runs the event loop until the _evbagscount is zero or
    the status is set to a value less than or equal to EXIT_FAILURE.
@@ -165,6 +170,7 @@ carrow_evloop_unregister(int fd);
    coroutines when events occur. */
 int
 carrow_evloop(volatile int *status);
+
 
 /* A function that set the coroutine state and coroutine handler for the 
    given file descriptor. */

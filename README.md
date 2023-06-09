@@ -50,3 +50,8 @@ pip install prettyc
 cd path/to/carrow/build
 make lint
 ```
+
+#### Coding style
+
+- Please preserve two blank lines between every definition at the root of the 
+  module/file.
