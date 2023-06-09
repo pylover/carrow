@@ -115,7 +115,7 @@ struct carrow_generic_coro {
     void *run;
     int line;
     int fd;
-    int events; // event mask
+    int events;  // events bitflags
 };
 
 

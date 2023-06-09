@@ -22,7 +22,7 @@ make clean all
 
 ### Running examples
 
-#### Example Dependencies: 
+#### Examples Dependencies: 
 
 - https://github.com/pylover/clog
 - https://github.com/pylover/mrb
