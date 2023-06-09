@@ -83,10 +83,10 @@ echoA(struct tcpconn_coro *self, struct tcpconn *conn) {
                 e |= COUT;
                 break;
             }
-            else if (bytes == -1) {
+            if (bytes == -1) {
                 CORO_REJECT("write(%d)", conn->fd);
             }
-            else if (bytes == 0) {
+            if (bytes == 0) {
                 CORO_REJECT("write(%d) EOF", conn->fd);
             }
         }
@@ -99,10 +99,10 @@ echoA(struct tcpconn_coro *self, struct tcpconn *conn) {
                 e |= CIN;
                 break;
             }
-            else if (bytes == -1) {
+            if (bytes == -1) {
                 CORO_REJECT("read(%d)", conn->fd);
             }
-            else if (bytes == 0) {
+            if (bytes == 0) {
                 CORO_REJECT("read(%d) EOF", conn->fd);
             }
         }
