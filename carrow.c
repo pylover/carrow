@@ -179,7 +179,7 @@ carrow_init(unsigned int openmax) {
             return -1;
         }
     }
-    evbags_init(_openmax);
+    evbags_init();
 
     _epollfd = epoll_create1(0);
     if (_epollfd < 0) {
