@@ -10,12 +10,11 @@ C non-blocking IO framework inspired by Haskell's arrow and monads.
 > comparable to monads with a static component.
 
 
-## Dependencies
-
-- https://github.com/pylover/cutest
-
-
 ## Build
+
+### Dependencies
+
+- [CMake](https://cmake.org).
 
 ```bash
 git clone git@github.com:pylover/carrow.git
@@ -55,6 +54,15 @@ make profile_sleep
 pip install prettyc
 cd path/to/carrow/build
 make lint
+```
+
+#### Running tests
+
+##### Dependencies
+- https://github.com/pylover/cutest
+
+```bash
+make test
 ```
 
 #### Coding style
