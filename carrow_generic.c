@@ -100,10 +100,10 @@ CARROW_NAME(evloop_unregister) (int fd) {
 
 int
 CARROW_NAME(forever) (CARROW_NAME(corofunc) f, CARROW_ENTITY *state,
-        volatile int *status) {
+        volatile int *status, unsigned int asapsmax) {
     int ret = EXIT_SUCCESS;
 
-    carrow_init(0);
+    carrow_init(0, asapsmax);
     CARROW_NAME(coro_create_and_run) (f, state);
     if (carrow_evloop(status)) {
         ret = EXIT_FAILURE;

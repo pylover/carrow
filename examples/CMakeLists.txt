@@ -48,6 +48,20 @@ add_custom_target(profile_timer
 )
 
 
+add_executable(timerasap
+    $<TARGET_OBJECTS:carrow>
+    timerasap.c
+)
+target_include_directories(timerasap PUBLIC "${CMAKE_SOURCE_DIR}")
+target_link_libraries(timerasap PUBLIC clog mrb)
+add_custom_target(run_timerasap $<TARGET_FILE:timerasap>)
+add_custom_target(profile_timerasap
+    COMMAND "valgrind"
+    ${VALGRIND_FLAGS}
+    $<TARGET_FILE:timerasap>
+)
+
+
 add_executable(sleep
     $<TARGET_OBJECTS:carrow>
     sleep.c

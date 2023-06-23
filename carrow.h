@@ -124,10 +124,14 @@ struct carrow_generic_coro {
 typedef void (*carrow_generic_corofunc) (void *coro, void *state);
 
 
+/* A function pointer type representing a carrow asap function */
+typedef void (*carrow_asapfunc) (void *params);
+
+
 /* A function that initializes the event loop with the given maximum number
    of file descriptors. */
 int
-carrow_init(unsigned int openmax);
+carrow_init(unsigned int openmax, unsigned int asapsmax);
 
 
 /* A function that frees the memory allocated for the _evbags array. */
@@ -163,6 +167,10 @@ carrow_evloop_modify_or_register(void *coro, void *state, int fd, int events,
    the event loop and deletes its evbag. */
 int
 carrow_evloop_unregister(int fd);
+
+
+int
+carrow_asap_register(carrow_asapfunc func, void *params); 
 
 
 /* A function that runs the event loop until the _evbagscount is zero or
