@@ -48,6 +48,13 @@ struct evbag {
 #define EVBAG_ISNULL(fd) (_evbags[fd] == NULL)
 
 
+static void
+_sighandler(int s) {
+    printf("\n");
+    _carrow_status = EXIT_SUCCESS;
+}
+
+
 static int
 evbag_set(int fd, struct carrow_generic_coro *coro, void *state,
         carrow_generic_corofunc handler) {
@@ -276,13 +283,6 @@ carrow_sleep(struct carrow_generic_coro *self, unsigned int seconds,
     self->events = CIN | CONCE;
     self->line = line;
     return 0;
-}
-
-
-static void
-_sighandler(int s) {
-    printf("\n");
-    _carrow_status = EXIT_SUCCESS;
 }
 
 
