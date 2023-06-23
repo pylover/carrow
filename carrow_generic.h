@@ -79,7 +79,7 @@ CARROW_NAME(evloop_unregister) (int fd);
 
 int
 CARROW_NAME(forever) (CARROW_NAME(corofunc) resolve, CARROW_ENTITY *state,
-        volatile int *status);
+        volatile int *status, unsigned int asapsmax);
 
 
 #endif

@@ -34,6 +34,9 @@ static struct sigaction old_action;
 static unsigned int _openmax;
 static struct evbag **_evbags;
 static volatile unsigned int _evbagscount;
+static unsigned int _asapsmax;
+static struct asapbag **_asapbags;
+static volatile unsigned int _asapbagscount;
 static int _epollfd = -1;
 
 
@@ -41,6 +44,12 @@ struct evbag {
     struct carrow_generic_coro coro;
     void *state;
     carrow_generic_corofunc handler;
+};
+
+
+struct asapbag {
+    carrow_asapfunc func;
+    void *params;
 };
 
 
@@ -169,8 +178,73 @@ evbags_deinit() {
 }
 
 
+static int
+asapbags_init() {
+    _asapbagscount = 0;
+    _asapbags = calloc(_asapsmax, sizeof(struct asapbag*));
+    if (_asapbags == NULL) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    memset(_asapbags, 0, sizeof(struct asapbag*) * _asapsmax);
+    return 0;
+}
+
+
+static void
+asapbags_deinit() {
+    for (int i = 0; i < _asapsmax; i++) {
+        if (_asapbags[i] != NULL) {
+            free(_asapbags[i]);
+            _asapbags[i] = NULL;
+        }
+    }
+
+    free(_asapbags);
+    _asapbags = NULL;
+}
+
+
+static void
+asap_trigger() {
+    for(int i = 0; i < _asapbagscount; i++) {
+        struct asapbag *bag = _asapbags[i]; 
+        bag->func(bag->params);
+    }
+    _asapbagscount = 0;
+}
+
+
 int
-carrow_init(unsigned int openmax) {
+carrow_asap_register(carrow_asapfunc func, void *params) {
+    if (_asapsmax == 0) {
+        return -1;
+    }
+
+    if (_asapbagscount >= _asapsmax) {
+        return -1;
+    }
+    struct asapbag *bag = _asapbags[_asapbagscount];
+
+    if (bag == NULL) {
+        bag = malloc(sizeof(struct asapbag));
+        if (bag == NULL) {
+            errno = ENOMEM;
+            return -1;
+        }
+        _asapbags[_asapbagscount] = bag;
+    }
+
+    bag->func = func;
+    bag->params = params;
+    _asapbagscount++;
+    return 0; 
+}
+
+
+int
+carrow_init(unsigned int openmax, unsigned int asapsmax) {
     if (_epollfd != -1) {
         return -1;
     }
@@ -191,6 +265,14 @@ carrow_init(unsigned int openmax) {
         return -1;
     }
 
+    _asapsmax = asapsmax;
+    if (_asapsmax > 0) {
+        if (asapbags_init()) {
+            evbags_deinit();
+            return -1;
+        }
+    }
+    
     _epollfd = epoll_create1(0);
     if (_epollfd < 0) {
         return -1;
@@ -314,6 +396,10 @@ carrow_evloop(volatile int *status) {
 
 evloop:
     while (_evbagscount && ((status == NULL) || (*status > EXIT_FAILURE))) {
+        if (_asapbagscount > 0) {
+            asap_trigger();
+        }
+
         errno = 0;
         nfds = epoll_wait(_epollfd, events, _openmax, -1);
         if (nfds < 0) {
@@ -351,5 +437,10 @@ carrow_deinit() {
     close(_epollfd);
     _epollfd = -1;
     evbags_deinit();
+
+    if (_asapsmax > 0) {
+        asapbags_deinit();
+    }
+
     errno = 0;
 }

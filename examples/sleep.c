@@ -65,5 +65,5 @@ main() {
         .counter = 0
     };
 
-    return foo_forever(fooA, &state, NULL);
+    return foo_forever(fooA, &state, NULL, 0);
 }

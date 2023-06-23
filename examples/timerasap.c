@@ -55,6 +55,12 @@ maketimer(unsigned int interval) {
 
 
 static void
+timer_asapfunc(int value) {
+    INFO("called from asapfunction value: %d", value);
+}
+
+
+static void
 timerA(struct timer_coro *self, struct timer *state) {
     CORO_START;
     unsigned long tmp;
@@ -70,6 +76,12 @@ timerA(struct timer_coro *self, struct timer *state) {
         bytes = read(self->fd, &tmp, sizeof(tmp));
         state->value += tmp;
         INFO("%s, fd: %d, value: %lu", state->title, self->fd, state->value);
+
+        if (state->value % 5 == 0) {
+            INFO("registering to asap");
+            carrow_asap_register((carrow_asapfunc)timer_asapfunc,
+                    (void *) state->value);
+        }
     }
 
     CORO_FINALLY;
@@ -99,10 +111,14 @@ main() {
         .interval = 3,
         .value = 0,
     };
+    if (carrow_init(0, 10)) {
+        ERROR("unable to init carrow");
+        return EXIT_FAILURE;
+    }
 
-    carrow_init(0, 0);
+    INFO("CARROW INIT");
     timer_coro_create_and_run(timerA, &state1);
-    timer_coro_create_and_run(timerA, &state2);
+    //timer_coro_create_and_run(timerA, &state2);
     carrow_evloop(NULL);
     carrow_deinit();
 

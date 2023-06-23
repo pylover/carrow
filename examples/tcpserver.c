@@ -205,5 +205,5 @@ main() {
         .backlog = 2,
     };
 
-    return tcpserver_forever(listenA, &state, NULL);
+    return tcpserver_forever(listenA, &state, NULL, 0);
 }

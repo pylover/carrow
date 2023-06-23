@@ -241,7 +241,7 @@ main() {
         return EXIT_FAILURE;
     }
 
-    ret = tcpconn_forever(connectA, &conn, NULL);
+    ret = tcpconn_forever(connectA, &conn, NULL, 0);
     if (mrb_destroy(conn.inbuff) || mrb_destroy(conn.outbuff)) {
         ERROR("Cannot dispose buffers.");
         ret = EXIT_FAILURE;
