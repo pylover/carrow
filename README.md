@@ -35,17 +35,20 @@ make clean all
 
 ```bash
 cd path/to/carrow/build
-make run_tcpclient
-make profile_tcpclient
+make tcpserver_exec
+make tcpserver_profile
 
-make run_tcpserver
-make profile_tcpserver
+make tcpclient_exec
+make tcpclient_profile
 
-make run_timer
-make profile_timer
+make udpserver_exec
+make udpserver_profile
 
-make run_sleep
-make profile_sleep
+make timer_exec
+make timer_profile
+
+make sleep_exec
+make sleep_profile
 ```
 
 ### Contirbution
