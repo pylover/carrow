@@ -91,7 +91,6 @@
     (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 
-#define CDBG errno, __FILENAME__, __LINE__, __FUNCTION__
 #define CMUSTWAIT() ((errno == EAGAIN) || (errno == EWOULDBLOCK) \
         || (errno == EINPROGRESS))
 #define CIN      EPOLLIN       // 1
